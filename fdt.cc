@@ -826,7 +826,7 @@ node::write(dtb::output_writer &writer, dtb::string_table &strings)
 	writer.write_comment(name);
 	writer.write_data(name_buffer);
 	writer.write_data((uint8_t)0);
-	for (property_iterator i=property_begin(), e=property_end() ; i!=e ; ++i)
+	for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
 	{
 		(*i)->write(writer, strings);
 	}
@@ -859,7 +859,7 @@ node::write_dts(FILE *file, int indent)
 		unit_address.print(file);
 	}
 	fputs(" {\n\n", file);
-	for (property_iterator i=property_begin(), e=property_end() ; i!=e ; ++i)
+	for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
 	{
 		(*i)->write_dts(file, indent+1);
 	}
@@ -906,7 +906,7 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 	path.pop_back();
 	// Now we collect the phandles and properties that reference
 	// other nodes.
-	for (node::property_iterator i=n->property_begin(), e=n->property_end() ; i!=e ; ++i)
+	for (auto i=n->property_begin(), e=n->property_end() ; i!=e ; ++i)
 	{
 		for (property::value_iterator p=(*i)->begin(),pe=(*i)->end() ; p!=pe ; ++p)
 		{

@@ -61,8 +61,7 @@ namespace
 			}
 			bool found_address = false;
 			bool found_size = false;
-			for (node::property_iterator i=n->property_begin(),
-			     e=n->property_end() ; i!=e ; ++i)
+			for (auto i=n->property_begin(), e=n->property_end() ; i!=e ; ++i)
 			{
 				if (!found_address)
 				{
@@ -100,8 +99,7 @@ checker::visit_node(device_tree *tree, const node_ptr &n)
 		return false;
 	}
 	// Now check its properties
-	for (node::property_iterator i=n->property_begin(), e=n->property_end()
-	     ; i!=e ; ++i)
+	for (auto i=n->property_begin(), e=n->property_end() ; i!=e ; ++i)
 	{
 		if (!check_property(tree, n, *i))
 		{

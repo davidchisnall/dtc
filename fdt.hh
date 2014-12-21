@@ -469,20 +469,16 @@ class node
 		return children.end();
 	}
 	/**
-	 * Iterator type for properties of a node.
-	 */
-	typedef property_vector::iterator property_iterator;
-	/**
 	 * Returns an iterator after the last property of this node.
 	 */
-	inline property_iterator property_begin()
+	inline property_vector::iterator property_begin()
 	{
 		return properties.begin();
 	}
 	/**
 	 * Returns an iterator for the first property of this node.
 	 */
-	inline property_iterator property_end()
+	inline property_vector::iterator property_end()
 	{
 		return properties.end();
 	}
