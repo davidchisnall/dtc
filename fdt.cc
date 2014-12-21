@@ -856,11 +856,13 @@ node::write_dts(FILE *file, int indent)
 	{
 		putc('\t', file);
 	}
+#ifdef PRINT_LABELS
 	if (label != string())
 	{
 		label.print(file);
 		fputs(": ", file);
 	}
+#endif
 	if (name != string())
 	{
 		name.print(file);
