@@ -615,7 +615,7 @@ class device_tree
 	 * buffers are the ones that own their memory, and so we must preserve
 	 * them for the lifetime of the device tree.  
 	 */
-	std::vector<input_buffer*> buffers;
+	std::vector<std::unique_ptr<input_buffer>> buffers;
 	/**
 	 * A map of used phandle values to nodes.  All phandles must be unique,
 	 * so we keep a set of ones that the user explicitly provides in the
@@ -722,10 +722,6 @@ class device_tree
 	 * a file that contains device tree source.
 	 */
 	void parse_dts(const char *fn, FILE *depfile);
-	/**
-	 * Destroy the tree and any input buffers that it holds.
-	 */
-	~device_tree();
 	/**
 	 * Returns whether this tree is valid.
 	 */

@@ -1049,7 +1049,8 @@ device_tree::buffer_for_file(const char *path)
 	if (string(path) == string("-"))
 	{
 		input_buffer *b = new stream_input_buffer();
-		buffers.push_back(b);
+		std::unique_ptr<input_buffer> ptr(b);
+		buffers.push_back(std::move(ptr));
 		return b;
 	}
 	int source = open(path, O_RDONLY);
@@ -1069,7 +1070,8 @@ device_tree::buffer_for_file(const char *path)
 	// Keep the buffer that owns the memory around for the lifetime
 	// of this FDT.  Ones simply referring to it may have shorter
 	// lifetimes.
-	buffers.push_back(b);
+	std::unique_ptr<input_buffer> ptr(b);
+	buffers.push_back(std::move(ptr));
 	close(source);
 	return b;
 }
@@ -1393,15 +1395,6 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 	}
 	collect_names();
 	resolve_cross_references();
-}
-
-device_tree::~device_tree()
-{
-	while (!buffers.empty())
-	{
-		delete buffers.back();
-		buffers.pop_back();
-	}
 }
 
 bool device_tree::parse_define(const char *def)
