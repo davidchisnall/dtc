@@ -126,11 +126,11 @@ property_value::resolve_type()
 		bool is_all_printable = true;
 		int nuls = 0;
 		int bytes = 0;
-		for (byte_buffer::iterator i=byte_data.begin(), e=byte_data.end()-1; i<e ; i++)
+		for (auto i : byte_data)
 		{
 			bytes++;
-			is_all_printable &= (*i == '\0') || isprint(*i);
-			if (*i == '\0')
+			is_all_printable &= (i == '\0') || isprint(i);
+			if (i == '\0')
 			{
 				nuls++;
 			}
@@ -162,15 +162,15 @@ property_value::write_as_string(FILE *file)
 	}
 	else
 	{
-		for (byte_buffer::iterator i=byte_data.begin(), e=byte_data.end()-1; i!=e ; ++i)
+		for (auto i : byte_data)
 		{
 			// FIXME Escape tabs, newlines, and so on.
-			if (*i == '\0')
+			if (i == '\0')
 			{
 				fputs("\", \"", file);
 				continue;
 			}
-			putc(*i, file);
+			putc(i, file);
 		}
 	}
 	putc('"', file);
@@ -181,7 +181,7 @@ property_value::write_as_cells(FILE *file)
 {
 	putc('<', file);
 	assert((byte_data.size() % 4) == 0);
-	for (byte_buffer::iterator i=byte_data.begin(), e=byte_data.end(); i!=e ; ++i)
+	for (auto i=byte_data.begin(), e=byte_data.end(); i!=e ; ++i)
 	{
 		uint32_t v = 0;
 		v = (v << 8) | *i;
@@ -204,7 +204,7 @@ void
 property_value::write_as_bytes(FILE *file)
 {
 	putc('[', file);
-	for (byte_buffer::iterator i=byte_data.begin(), e=byte_data.end(); i!=e ; i++)
+	for (auto i=byte_data.begin(), e=byte_data.end(); i!=e ; i++)
 	{
 		fprintf(file, "%02hhx", *i);
 		if (i+1 != e)
@@ -948,12 +948,11 @@ device_tree::collect_names()
 void
 device_tree::resolve_cross_references()
 {
-	for (std::vector<property_value*>::iterator i=cross_references.begin(), e=cross_references.end() ; i!=e ; ++i)
+	for (auto *pv : cross_references)
 	{
-		property_value* pv = *i;
 		node_path path = node_paths[pv->string_data];
 		// Skip the first name in the path.  It's always "", and implicitly /
-		for (node_path::iterator p=path.begin()+1, pe=path.end() ; p!=pe ; ++p)
+		for (auto p=path.begin()+1, pe=path.end() ; p!=pe ; ++p)
 		{
 			pv->byte_data.push_back('/');
 			p->first.push_to_buffer(pv->byte_data);
@@ -966,9 +965,9 @@ device_tree::resolve_cross_references()
 		pv->byte_data.push_back(0);
 	}
 	uint32_t phandle = 1;
-	for (std::vector<property_value*>::iterator i=phandles.begin(), e=phandles.end() ; i!=e ; ++i)
+	for (auto &i : phandles)
 	{
-		string target_name = (*i)->string_data;
+		string target_name = i->string_data;
 		node *target = node_names[target_name];
 		if (target == 0)
 		{
@@ -1016,8 +1015,8 @@ device_tree::resolve_cross_references()
 				target->add_property(p);
 			}
 		}
-		p->begin()->push_to_buffer((*i)->byte_data);
-		assert((*i)->byte_data.size() == 4);
+		p->begin()->push_to_buffer(i->byte_data);
+		assert(i->byte_data.size() == 4);
 	}
 }
 
@@ -1047,8 +1046,11 @@ device_tree::buffer_for_file(const char *path)
 	if (string(path) == string("-"))
 	{
 		input_buffer *b = new stream_input_buffer();
-		std::unique_ptr<input_buffer> ptr(b);
-		buffers.push_back(std::move(ptr));
+		if (b)
+		{
+			std::unique_ptr<input_buffer> ptr(b);
+			buffers.push_back(std::move(ptr));
+		}
 		return b;
 	}
 	int source = open(path, O_RDONLY);
@@ -1068,8 +1070,11 @@ device_tree::buffer_for_file(const char *path)
 	// Keep the buffer that owns the memory around for the lifetime
 	// of this FDT.  Ones simply referring to it may have shorter
 	// lifetimes.
-	std::unique_ptr<input_buffer> ptr(b);
-	buffers.push_back(std::move(ptr));
+	if (b)
+	{
+		std::unique_ptr<input_buffer> ptr(b);
+		buffers.push_back(std::move(ptr));
+	}
 	close(source);
 	return b;
 }
@@ -1087,13 +1092,12 @@ device_tree::write(int fd)
 	// Build the reservation table
 	reservation_writer.write_comment(string("Memory reservations"));
 	reservation_writer.write_label(string("dt_reserve_map"));
-	for (std::vector<reservation>::iterator i=reservations.begin(),
-	     e=reservations.end() ; i!=e ; ++i)
+	for (auto &i : reservations)
 	{
 		reservation_writer.write_comment(string("Reservation start"));
-		reservation_writer.write_data(i->first);
+		reservation_writer.write_data(i.first);
 		reservation_writer.write_comment(string("Reservation length"));
-		reservation_writer.write_data(i->first);
+		reservation_writer.write_data(i.first);
 	}
 	// Write n spare reserve map entries, plus the trailing 0.
 	for (uint32_t i=0 ; i<=spare_reserve_map_entries ; i++)
@@ -1180,10 +1184,9 @@ device_tree::write_dts(int fd)
 	{
 		const char msg[] = "/memreserve/";
 		fwrite(msg, sizeof(msg), 1, file);
-		for (std::vector<reservation>::iterator i=reservations.begin(),
-		     e=reservations.end() ; i!=e ; ++i)
+		for (auto &i : reservations)
 		{
-			fprintf(file, " %" PRIx64 " %" PRIx64, i->first, i->second);
+			fprintf(file, " %" PRIx64 " %" PRIx64, i.first, i.second);
 		}
 		fputs(";\n\n", file);
 	}
@@ -1313,10 +1316,10 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 
 		if (include_buffer == 0)
 		{
-			for (std::vector<const char*>::iterator i=include_paths.begin(), e=include_paths.end() ; e!=i ; ++i)
+			for (auto i : include_paths)
 			{
 				free(include_file);
-				dir = *i;
+				dir = i;
 				dir_length = strlen(dir);
 				include_file = (char*)malloc(strlen(dir) +
 						length + 2);
