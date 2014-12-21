@@ -514,9 +514,9 @@ class node
 	/**
 	 * Adds a new property to this node.
 	 */
-	inline void add_property(property_ptr p)
+	inline void add_property(property_ptr &p)
 	{
-		properties.push_back(std::move(p));
+		properties.push_back(p);
 	}
 	/**
 	 * Merges a node into this one.  Any properties present in both are

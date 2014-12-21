@@ -781,9 +781,8 @@ node::merge_node(node_ptr other)
 	// large numbers of properties, but for typical usage the
 	// entire vector will fit (easily) into cache, so iterating
 	// over it repeatedly isn't that expensive.
-	while (!other->properties.empty())
+	for (auto &p : other->properties)
 	{
-		property_ptr p = other->properties.front();
 		for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
 		{
 			if ((*i)->get_key() == p->get_key())
@@ -794,9 +793,8 @@ node::merge_node(node_ptr other)
 		}
 		add_property(p);
 	}
-	while (!other->children.empty())
+	for (auto &c : other->children)
 	{
-		node_ptr &c = other->children.front();
 		bool found = false;
 		for (auto &i : children)
 		{
