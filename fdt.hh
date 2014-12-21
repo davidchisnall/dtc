@@ -32,7 +32,8 @@
 
 #ifndef _FDT_HH_
 #define _FDT_HH_
-#include <map>
+#include <unordered_map>
+#include <memory>
 
 #include "util.hh"
 #include "string.hh"
@@ -49,7 +50,14 @@ class string_table;
 namespace fdt
 {
 class property;
-typedef std::map<string, property*> define_map;
+/**
+ * Type for (owned) pointers to properties.
+ */
+typedef std::shared_ptr<property> property_ptr;
+/**
+ * Map from macros to property pointers.
+ */
+typedef std::unordered_map<string, property_ptr> define_map;
 /**
  * Properties may contain a number of different value, each with a different
  * label.  This class encapsulates a single value.
@@ -299,18 +307,18 @@ class property
 	 * property from the input, and returns it on success.  On any parse
 	 * error, this will return 0.
 	 */
-	static property* parse_dtb(input_buffer &structs,
+	static property_ptr parse_dtb(input_buffer &structs,
 	                           input_buffer &strings);
 	/**
 	 * Factory method for constructing a new property.  Attempts to parse a
 	 * property from the input, and returns it on success.  On any parse
 	 * error, this will return 0.
 	 */
-	static property* parse(input_buffer &input,
-	                       string key,
-	                       string label=string(),
-	                       bool semicolonTerminated=true,
-	                       define_map *defines=0);
+	static property_ptr parse(input_buffer &input,
+	                          string key,
+	                          string label=string(),
+	                          bool semicolonTerminated=true,
+	                          define_map *defines=0);
 	/**
 	 * Iterator type used for accessing the values of a property.
 	 */
@@ -378,11 +386,15 @@ class node
 	 * name followed by an at symbol.
 	 */
 	string unit_address;
+	/**
+	 * The type for the property vector.
+	 */
+	typedef std::vector<property_ptr> property_vector;
 	private:
 	/**
 	 * The properties contained within this node.
 	 */
-	std::vector<property*> properties;
+	property_vector properties;
 	/**
 	 * The children of this node.
 	 */
@@ -415,7 +427,7 @@ class node
 	 * Comparison function for properties, used when sorting the properties
 	 * vector.  Orders the properties based on their names.
 	 */
-	static inline bool cmp_properties(property *p1, property *p2);
+	static inline bool cmp_properties(property_ptr &p1, property_ptr &p2);
 		/*
 	{
 		return p1->get_key() < p2->get_key();
@@ -463,7 +475,7 @@ class node
 	/**
 	 * Iterator type for properties of a node.
 	 */
-	typedef std::vector<property*>::iterator property_iterator;
+	typedef property_vector::iterator property_iterator;
 	/**
 	 * Returns an iterator after the last property of this node.
 	 */
@@ -507,13 +519,13 @@ class node
 	 * Returns a property corresponding to the specified key, or 0 if this
 	 * node does not contain a property of that name.
 	 */
-	property *get_property(string key);
+	property_ptr get_property(string key);
 	/**
 	 * Adds a new property to this node.
 	 */
-	inline void add_property(property *p)
+	inline void add_property(property_ptr p)
 	{
-		properties.push_back(p);
+		properties.push_back(std::move(p));
 	}
 	/**
 	 * Merges a node into this one.  Any properties present in both are
@@ -589,13 +601,13 @@ class device_tree
 	 * Mapping from names to nodes.  Only unambiguous names are recorded,
 	 * duplicate names are stored as (node*)-1.
 	 */
-	std::map<string, node*> node_names;
+	std::unordered_map<string, node*> node_names;
 	/**
 	 * A map from labels to node paths.  When resolving cross references,
 	 * we look up referenced nodes in this and replace the cross reference
 	 * with the full path to its target.
 	 */
-	std::map<string, node_path> node_paths;
+	std::unordered_map<string, node_path> node_paths;
 	/**
 	 * A collection of property values that are references to other nodes.
 	 * These should be expanded to the full path of their targets.
@@ -622,7 +634,7 @@ class device_tree
 	 * find phandles that were provided by the user explicitly when we are
 	 * doing checking.
 	 */
-	std::map<uint32_t, node*> used_phandles;
+	std::unordered_map<uint32_t, node*> used_phandles;
 	/**
 	 * Paths to search for include files.  This contains a set of
 	 * nul-terminated strings, which are not owned by this class and so

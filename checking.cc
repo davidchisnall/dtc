@@ -125,22 +125,21 @@ void
 checker::report_error(const char *errmsg)
 {
 	fprintf(stderr, "Error: %s, while checking node: ", errmsg);
-	for (device_tree::node_path::iterator p=path.begin()+1, pe=path.end() ;
-	     p!=pe ; ++p)
+	for (auto &p : path)
 	{
 		putc('/', stderr);
-		p->first.dump();
-		if (!(p->second.empty()))
+		p.first.dump();
+		if (!(p.second.empty()))
 		{
 			putc('@', stderr);
-			p->second.dump();
+			p.second.dump();
 		}
 	}
 	fprintf(stderr, " [-W%s]\n", checker_name);
 }
 
 bool
-property_checker::check_property(device_tree *tree, node *n, property *p)
+property_checker::check_property(device_tree *tree, node *n, property_ptr p)
 {
 	if (p->get_key() == key)
 	{
@@ -154,7 +153,7 @@ property_checker::check_property(device_tree *tree, node *n, property *p)
 }
 
 bool
-property_size_checker::check(device_tree *tree, node *n, property *p)
+property_size_checker::check(device_tree *tree, node *n, property_ptr p)
 {
 	uint32_t psize = 0;
 	for (property::value_iterator i=p->begin(),e=p->end() ; i!=e ; ++i)
@@ -216,10 +215,9 @@ bool
 check_manager::run_checks(device_tree *tree, bool keep_going)
 {
 	bool success = true;
-	for (std::map<string, checker*>::iterator i=checkers.begin(),
-	     e=checkers.end() ; i!=e ; ++i)
+	for (auto &i : checkers)
 	{
-		success &= i->second->check_tree(tree);
+		success &= i.second->check_tree(tree);
 		if (!(success || keep_going))
 		{
 			break;
@@ -231,7 +229,7 @@ check_manager::run_checks(device_tree *tree, bool keep_going)
 bool
 check_manager::disable_checker(string name)
 {
-	std::map<string, checker*>::iterator checker = checkers.find(name);
+	auto checker = checkers.find(name);
 	if (checker != checkers.end())
 	{
 		disabled_checkers.insert(std::make_pair(name,
@@ -245,8 +243,7 @@ check_manager::disable_checker(string name)
 bool
 check_manager::enable_checker(string name)
 {
-	std::map<string, checker*>::iterator checker =
-		disabled_checkers.find(name);
+	auto checker = disabled_checkers.find(name);
 	if (checker != disabled_checkers.end())
 	{
 		checkers.insert(std::make_pair(name, checker->second));

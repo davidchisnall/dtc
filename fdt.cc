@@ -458,27 +458,25 @@ property::property(input_buffer &input,
 	}
 }
 
-property*
+property_ptr
 property::parse_dtb(input_buffer &structs, input_buffer &strings)
 {
-	property *p = new property(structs, strings);
+	property_ptr p(new property(structs, strings));
 	if (!p->valid)
 	{
-		delete p;
-		p = 0;
+		p = nullptr;
 	}
 	return p;
 }
 
-property*
+property_ptr
 property::parse(input_buffer &input, string key, string label,
                 bool semicolonTerminated, define_map *defines)
 {
-	property *p = new property(input, key, label, semicolonTerminated, defines);
+	property_ptr p(new property(input, key, label, semicolonTerminated, defines));
 	if (!p->valid)
 	{
-		delete p;
-		p = 0;
+		p = nullptr;
 	}
 	return p;
 }
@@ -605,7 +603,7 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 			// Property, parse it.
 			case dtb::FDT_PROP:
 			{
-				property *prop = property::parse_dtb(structs, strings);
+				property_ptr prop = property::parse_dtb(structs, strings);
 				if (prop == 0)
 				{
 					valid = false;
@@ -667,7 +665,7 @@ node::node(input_buffer &input, string n, string l, string a, define_map *define
 		// If we're parsing a property, then we must actually do that.
 		if (input.consume('='))
 		{
-			property *p= property::parse(input, child_name,
+			property_ptr p = property::parse(input, child_name,
 					child_label, true, defines);
 			if (p == 0)
 			{
@@ -693,7 +691,7 @@ node::node(input_buffer &input, string n, string l, string a, define_map *define
 		}
 		else if (input.consume(';'))
 		{
-			properties.push_back(new property(child_name, child_label));
+			properties.push_back(property_ptr(new property(child_name, child_label)));
 		}
 		else
 		{
@@ -706,7 +704,7 @@ node::node(input_buffer &input, string n, string l, string a, define_map *define
 }
 
 bool
-node::cmp_properties(property *p1, property *p2)
+node::cmp_properties(property_ptr &p1, property_ptr &p2)
 {
 	return p1->get_key() < p2->get_key();
 }
@@ -767,21 +765,16 @@ node::~node()
 		delete children.back();
 		children.pop_back();
 	}
-	while (!properties.empty())
-	{
-		delete properties.back();
-		properties.pop_back();
-	}
 }
 
-property*
+property_ptr
 node::get_property(string key)
 {
-	for (property_iterator i=property_begin(), e=property_end() ; i!=e ; ++i)
+	for (auto &i : properties)
 	{
-		if ((*i)->get_key() == key)
+		if (i->get_key() == key)
 		{
-			return *i;
+			return i;
 		}
 	}
 	return 0;
@@ -801,12 +794,11 @@ node::merge_node(node *other)
 	// over it repeatedly isn't that expensive.
 	while (!other->properties.empty())
 	{
-		property *p = other->properties.front();
-		for (property_iterator i=property_begin(), e=property_end() ; i!=e ; ++i)
+		property_ptr p = other->properties.front();
+		for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
 		{
 			if ((*i)->get_key() == p->get_key())
 			{
-				delete *i;
 				properties.erase(i);
 				break;
 			}
@@ -913,7 +905,7 @@ device_tree::collect_names_recursive(node* n, node_path &path)
 		else
 		{
 			node_names[name] = (node*)-1;
-			std::map<string, node_path>::iterator i = node_paths.find(name);
+			auto i = node_paths.find(name);
 			if (i != node_paths.end())
 			{
 				node_paths.erase(name);
@@ -1003,7 +995,7 @@ device_tree::resolve_cross_references()
 			return;
 		}
 		// If there is an existing phandle, use it
-		property *p = target->get_property("phandle");
+		property_ptr p = target->get_property("phandle");
 		if (p == 0)
 		{
 			p = target->get_property("linux,phandle");
@@ -1029,13 +1021,13 @@ device_tree::resolve_cross_references()
 			push_big_endian(v.byte_data, phandle++);
 			if (phandle_node_name == BOTH || phandle_node_name == LINUX)
 			{
-				p = new property(string("linux,phandle"));
+				p.reset(new property(string("linux,phandle")));
 				p->add_value(v);
 				target->add_property(p);
 			}
 			if (phandle_node_name == BOTH || phandle_node_name == EPAPR)
 			{
-				p = new property(string("phandle"));
+				p.reset(new property(string("phandle")));
 				p->add_value(v);
 				target->add_property(p);
 			}
@@ -1431,11 +1423,6 @@ device_tree::~device_tree()
 		delete buffers.back();
 		buffers.pop_back();
 	}
-	for (define_map::iterator i=defines.begin(), e=defines.end() ;
-	     i!=e ; ++i)
-	{
-		delete i->second;
-	}
 }
 
 bool device_tree::parse_define(const char *def)
@@ -1454,10 +1441,10 @@ bool device_tree::parse_define(const char *def)
 	string name(def, val-def);
 	val++;
 	input_buffer in = input_buffer(val, strlen(val));
-	property *p = property::parse(in, name, string(), false);
+	property_ptr p = property::parse(in, name, string(), false);
 	if (p)
 		defines[name] = p;
-	return p;
+	return (bool)p;
 }
 
 } // namespace fdt
