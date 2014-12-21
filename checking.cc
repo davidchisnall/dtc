@@ -51,7 +51,7 @@ namespace
 	struct address_cells_checker : public checker
 	{
 		address_cells_checker(const char *name) : checker(name) {}
-		virtual bool check_node(device_tree *tree, node *n)
+		virtual bool check_node(device_tree *tree, const node_ptr &n)
 		{
 			// If this has no children, it trivially meets the
 			// conditions.
@@ -91,7 +91,7 @@ namespace
 } // anonymous namespace
 
 bool
-checker::visit_node(device_tree *tree, node *n)
+checker::visit_node(device_tree *tree, const node_ptr &n)
 {
 	path.push_back(std::make_pair(n->name, n->unit_address));
 	// Check this node
@@ -139,7 +139,7 @@ checker::report_error(const char *errmsg)
 }
 
 bool
-property_checker::check_property(device_tree *tree, node *n, property_ptr p)
+property_checker::check_property(device_tree *tree, const node_ptr &n, property_ptr p)
 {
 	if (p->get_key() == key)
 	{
@@ -153,7 +153,7 @@ property_checker::check_property(device_tree *tree, node *n, property_ptr p)
 }
 
 bool
-property_size_checker::check(device_tree *tree, node *n, property_ptr p)
+property_size_checker::check(device_tree *tree, const node_ptr &n, property_ptr p)
 {
 	uint32_t psize = 0;
 	for (property::value_iterator i=p->begin(),e=p->end() ; i!=e ; ++i)

@@ -588,13 +588,13 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 			// Child node, parse it.
 			case dtb::FDT_BEGIN_NODE:
 			{
-				node *child = node::parse_dtb(structs, strings);
+				node_ptr child = node::parse_dtb(structs, strings);
 				if (child == 0)
 				{
 					valid = false;
 					return;
 				}
-				children.push_back(child);
+				children.push_back(std::move(child));
 				break;
 			}
 			// End of this node, no errors.
@@ -678,11 +678,11 @@ node::node(input_buffer &input, string n, string l, string a, define_map *define
 		}
 		else if (!is_property && input[0] == ('{'))
 		{
-			node *child = node::parse(input, child_name,
+			node_ptr child = node::parse(input, child_name,
 					child_label, child_address, defines);
 			if (child)
 			{
-				children.push_back(child);
+				children.push_back(std::move(child));
 			}
 			else
 			{
@@ -710,7 +710,7 @@ node::cmp_properties(property_ptr &p1, property_ptr &p2)
 }
 
 bool
-node::cmp_children(node *c1, node *c2)
+node::cmp_children(node_ptr &c1, node_ptr &c2)
 {
 	if (c1->name == c2->name)
 	{
@@ -730,41 +730,30 @@ node::sort()
 	}
 }
 
-node*
+node_ptr
 node::parse(input_buffer &input,
             string name,
             string label,
             string address,
             define_map *defines)
 {
-	node *n = new node(input, name, label, address, defines);
+	node_ptr n(new node(input, name, label, address, defines));
 	if (!n->valid)
 	{
-		delete n;
 		n = 0;
 	}
 	return n;
 }
 
-node*
+node_ptr
 node::parse_dtb(input_buffer &structs, input_buffer &strings)
 {
-	node *n = new node(structs, strings);
+	node_ptr n(new node(structs, strings));
 	if (!n->valid)
 	{
-		delete n;
 		n = 0;
 	}
 	return n;
-}
-
-node::~node()
-{
-	while (!children.empty())
-	{
-		delete children.back();
-		children.pop_back();
-	}
 }
 
 property_ptr
@@ -781,7 +770,7 @@ node::get_property(string key)
 }
 
 void
-node::merge_node(node *other)
+node::merge_node(node_ptr other)
 {
 	if (!other->label.empty())
 	{
@@ -804,27 +793,24 @@ node::merge_node(node *other)
 			}
 		}
 		add_property(p);
-		other->properties.erase(other->properties.begin());
 	}
 	while (!other->children.empty())
 	{
-		node *c = other->children.front();
+		node_ptr &c = other->children.front();
 		bool found = false;
-		for (child_iterator i=child_begin(), e=child_end() ; i!=e ; ++i)
+		for (auto &i : children)
 		{
-			if ((*i)->name == c->name && (*i)->unit_address == c->unit_address)
+			if (i->name == c->name && i->unit_address == c->unit_address)
 			{
-				(*i)->merge_node(c);
-				delete c;
+				i->merge_node(std::move(c));
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 		{
-			children.push_back(c);
+			children.push_back(std::move(c));
 		}
-		other->children.erase(other->children.begin());
 	}
 }
 
@@ -891,7 +877,7 @@ node::write_dts(FILE *file, int indent)
 }
 
 void
-device_tree::collect_names_recursive(node* n, node_path &path)
+device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 {
 	string name = n->label;
 	path.push_back(std::make_pair(n->name, n->unit_address));
@@ -899,7 +885,7 @@ device_tree::collect_names_recursive(node* n, node_path &path)
 	{
 		if (node_names.find(name) == node_names.end())
 		{
-			node_names.insert(std::make_pair(name, n));
+			node_names.insert(std::make_pair(name, n.get()));
 			node_paths.insert(std::make_pair(name, path));
 		}
 		else
@@ -948,7 +934,7 @@ device_tree::collect_names_recursive(node* n, node_path &path)
 			else
 			{
 				uint32_t phandle = (*i)->begin()->get_as_uint32();
-				used_phandles.insert(std::make_pair(phandle, n));
+				used_phandles.insert(std::make_pair(phandle, n.get()));
 			}
 		}
 	}
@@ -1038,16 +1024,16 @@ device_tree::resolve_cross_references()
 }
 
 void
-device_tree::parse_roots(input_buffer &input, std::vector<node*> &roots)
+device_tree::parse_roots(input_buffer &input, std::vector<node_ptr> &roots)
 {
 	input.next_token();
 	while (valid && input.consume('/'))
 	{
 		input.next_token();
-		node *n = node::parse(input, string("", 1), string(), string(), &defines);
+		node_ptr n = node::parse(input, string("", 1), string(), string(), &defines);
 		if (n)
 		{
-			roots.push_back(n);
+			roots.push_back(std::move(n));
 		}
 		else
 		{
@@ -1273,7 +1259,7 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 		valid = false;
 		return;
 	}
-	std::vector<node*> roots;
+	std::vector<node_ptr> roots;
 	input_buffer &input = *in;
 	input.next_token();
 	bool read_header = false;
@@ -1394,18 +1380,15 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 			input.parse_error("Failed to find root node /.");
 			return;
 		case 1:
-			root = roots[0];
+			root = std::move(roots[0]);
 			break;
 		default:
 		{
-			root = roots[0];
-			for (std::vector<node*>::iterator i=roots.begin()+1,
-			     e=roots.end() ; i!=e ; ++i)
+			root = std::move(roots[0]);
+			for (auto i=roots.begin()+1, e=roots.end() ; i!=e ; ++i)
 			{
-				root->merge_node(*i);
-				delete *i;
+				root->merge_node(std::move(*i));
 			}
-			roots.resize(1);
 		}
 	}
 	collect_names();
@@ -1414,10 +1397,6 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 
 device_tree::~device_tree()
 {
-	if (root != 0)
-	{
-		delete root;
-	}
 	while (!buffers.empty())
 	{
 		delete buffers.back();

@@ -50,10 +50,15 @@ class string_table;
 namespace fdt
 {
 class property;
+class node;
 /**
  * Type for (owned) pointers to properties.
  */
 typedef std::shared_ptr<property> property_ptr;
+/**
+ * Owning pointer to a node.
+ */
+typedef std::unique_ptr<node> node_ptr;
 /**
  * Map from macros to property pointers.
  */
@@ -398,7 +403,7 @@ class node
 	/**
 	 * The children of this node.
 	 */
-	std::vector<node*> children;
+	std::vector<node_ptr> children;
 	/**
 	 * A flag indicating whether this node is valid.  This is set to false
 	 * if an error occurs during parsing.
@@ -438,16 +443,7 @@ class node
 	 * vector.  Orders the nodes based on their names or, if the names are
 	 * the same, by the unit addresses.
 	 */
-	static inline bool cmp_children(node *c1, node *c2);
-		/*
-	{
-		if (c1->name == c2->name)
-		{
-			return c1->unit_address < c2->unit_address;
-		}
-		return c1->name < c2->name;
-	}
-	*/
+	static inline bool cmp_children(node_ptr &c1, node_ptr &c2);
 	public:
 	/**
 	 * Sorts the node's properties and children into alphabetical order and
@@ -457,7 +453,7 @@ class node
 	/**
 	 * Iterator type for child nodes.
 	 */
-	typedef std::vector<node*>::iterator child_iterator;
+	typedef std::vector<node_ptr>::iterator child_iterator;
 	/**
 	 * Returns an iterator for the first child of this node.
 	 */
@@ -497,11 +493,11 @@ class node
 	 * cursor on the open brace of the property, after the name and so on
 	 * have been parsed.
 	 */
-	static node* parse(input_buffer &input,
-	                   string name,
-	                   string label=string(),
-	                   string address=string(),
-	                   define_map *defines=0);
+	static node_ptr parse(input_buffer &input,
+	                      string name,
+	                      string label=string(),
+	                      string address=string(),
+	                      define_map *defines=0);
 	/**
 	 * Factory method for constructing a new node.  Attempts to parse a
 	 * node in DTB format from the input, and returns it on success.  On
@@ -509,12 +505,7 @@ class node
 	 * cursor on the open brace of the property, after the name and so on
 	 * have been parsed.
 	 */
-	static node* parse_dtb(input_buffer &structs, input_buffer &strings);
-	/**
-	 * Destroys the node, recursively deleting all of its properties and
-	 * children.
-	 */
-	~node();
+	static node_ptr parse_dtb(input_buffer &structs, input_buffer &strings);
 	/**
 	 * Returns a property corresponding to the specified key, or 0 if this
 	 * node does not contain a property of that name.
@@ -531,7 +522,7 @@ class node
 	 * Merges a node into this one.  Any properties present in both are
 	 * overridden, any properties present in only one are preserved.
 	 */
-	void merge_node(node *other);
+	void merge_node(node_ptr other);
 	/**
 	 * Write this node to the specified output.  Although nodes do not
 	 * refer to a string table directly, their properties do.  The string
@@ -596,7 +587,7 @@ class device_tree
 	/**
 	 * Root node.  All other nodes are children of this node.
 	 */
-	node *root;
+	node_ptr root;
 	/**
 	 * Mapping from names to nodes.  Only unambiguous names are recorded,
 	 * duplicate names are stored as (node*)-1.
@@ -667,7 +658,7 @@ class device_tree
 	 * used in resolving cross references.  Also collects phandle
 	 * properties that have been explicitly added.  
 	 */
-	void collect_names_recursive(node* n, node_path &path);
+	void collect_names_recursive(node_ptr &n, node_path &path);
 	/**
 	 * Calls the recursive version of this method on every root node.
 	 */
@@ -681,7 +672,7 @@ class device_tree
 	/**
 	 * Parses root nodes from the top level of a dts file.  
 	 */
-	void parse_roots(input_buffer &input, std::vector<node*> &roots);
+	void parse_roots(input_buffer &input, std::vector<node_ptr> &roots);
 	/**
 	 * Allocates a new mmap()'d input buffer for use in parsing.  This
 	 * object then keeps a reference to it, ensuring that it is not
@@ -718,7 +709,7 @@ class device_tree
 	/**
 	 * Default constructor.  Creates a valid, but empty FDT.
 	 */
-	device_tree() : phandle_node_name(EPAPR), valid(true), root(0),
+	device_tree() : phandle_node_name(EPAPR), valid(true),
 		boot_cpu(0), spare_reserve_map_entries(0),
 		minimum_blob_size(0), blob_padding(0) {}
 	/**
@@ -753,7 +744,7 @@ class device_tree
 	 * Returns a pointer to the root node of this tree.  No ownership
 	 * transfer.
 	 */
-	inline node *get_root() const
+	inline const node_ptr &get_root() const
 	{
 		return root;
 	}
