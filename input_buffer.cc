@@ -168,7 +168,7 @@ input_buffer::next_token()
 			// Eat the /
 			++(*this);
 		}
-		// Parse // comments and # comments
+		// Parse // comments
 		if (((*this)[0] == '/' && (*this)[1] == '/'))
 		{
 			// eat the start of the comment
