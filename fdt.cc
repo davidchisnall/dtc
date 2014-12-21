@@ -980,7 +980,6 @@ device_tree::resolve_cross_references()
 				p->second.push_to_buffer(pv->byte_data);
 			}
 		}
-		pv->byte_data.push_back(0);
 	}
 	uint32_t phandle = 1;
 	for (auto &i : phandles)
