@@ -1316,7 +1316,7 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 		while (input[length] != '"') length++;
 
 		const char *file = (const char*)input;
-		const char *dir = dirname(fn);
+		const char *dir = dirname((char*)fn);
 		int dir_length = strlen(dir);
 		char *include_file = (char*)malloc(strlen(dir) + length + 2);
 		memcpy(include_file, dir, dir_length);
