@@ -983,7 +983,7 @@ device_tree::resolve_cross_references()
 		node *target = node_names[target_name];
 		if (target == 0)
 		{
-			fprintf(stderr, "Failed to find node with label:");
+			fprintf(stderr, "Failed to find node with label: ");
 			target_name.dump();
 			fprintf(stderr, "\n");
 			valid = 0;
