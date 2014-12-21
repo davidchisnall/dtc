@@ -1039,7 +1039,7 @@ device_tree::parse_roots(input_buffer &input, std::vector<node_ptr> &roots)
 	while (valid && input.consume('/'))
 	{
 		input.next_token();
-		node_ptr n = node::parse(input, string("", 1), string(), string(), &defines);
+		node_ptr n = node::parse(input, string(), string(), string(), &defines);
 		if (n)
 		{
 			roots.push_back(std::move(n));
