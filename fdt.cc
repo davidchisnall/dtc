@@ -508,6 +508,35 @@ property::write(dtb::output_writer &writer, dtb::string_table &strings)
 	writer.write_data(value_buffer);
 }
 
+bool
+property_value::try_to_merge(property_value &other)
+{
+	resolve_type();
+	switch (type)
+	{
+		case UNKNOWN:
+			__builtin_unreachable();
+			assert(0);
+			return false;
+		case EMPTY:
+			*this = other;
+		case STRING:
+		case STRING_LIST:
+		case CROSS_REFERENCE:
+			return false;
+		case PHANDLE:
+		case BINARY:
+			if (other.type == PHANDLE || other.type == BINARY)
+			{
+				type = BINARY;
+				byte_data.insert(byte_data.end(), other.byte_data.begin(),
+				                 other.byte_data.end());
+				return true;
+			}
+	}
+	return false;
+}
+
 void
 property::write_dts(FILE *file, int indent)
 {
@@ -526,8 +555,23 @@ property::write_dts(FILE *file, int indent)
 	}
 	if (!values.empty())
 	{
+		std::vector<property_value> *vals = &values;
+		std::vector<property_value> v;
+		// If we've got multiple values then try to merge them all together.
+		if (values.size() > 1)
+		{
+			vals = &v;
+			v.push_back(values.front());
+			for (auto i=(++begin()), e=end() ; i!=e ; ++i)
+			{
+				if (!v.back().try_to_merge(*i))
+				{
+					v.push_back(*i);
+				}
+			}
+		}
 		fputs(" = ", file);
-		for (value_iterator i=begin(), e=end() ; i!=e ; ++i)
+		for (auto i=vals->begin(), e=vals->end() ; i!=e ; ++i)
 		{
 			i->write_dts(file);
 			if (i+1 != e)

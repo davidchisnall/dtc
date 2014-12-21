@@ -199,6 +199,11 @@ struct property_value
 	 * - Otherwise, it is printed as a byte buffer.
 	 */
 	void write_dts(FILE *file);
+	/**
+	 * Tries to merge adjacent property values, returns true if it succeeds and
+	 * false otherwise.
+	 */
+	bool try_to_merge(property_value &other);
 	private:
 	/**
 	 * Returns whether the value is of the specified type.  If the type of
