@@ -238,11 +238,12 @@ mmap_input_buffer::mmap_input_buffer(int fd) : input_buffer(0, 0)
 		perror("Failed to stat file");
 	}
 	size = sb.st_size;
-	buffer = (const char*)mmap(0, size, PROT_READ,
-		MAP_PREFAULT_READ, fd, 0);
-	if (buffer == 0)
+	buffer = (const char*)mmap(0, size, PROT_READ, MAP_PRIVATE |
+			MAP_PREFAULT_READ, fd, 0);
+	if (buffer == MAP_FAILED)
 	{
 		perror("Failed to mmap file");
+		exit(EXIT_FAILURE);
 	}
 }
 
