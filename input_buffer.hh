@@ -81,6 +81,10 @@ class input_buffer
 	void skip_spaces();
 	public:
 	/**
+	 * Return whether all input has been consumed.
+	 */
+	bool finished() { return cursor >= size; }
+	/**
 	 * Virtual destructor.  Does nothing, but exists so that subclasses
 	 * that own the memory can run cleanup code for deallocating it.
 	 */

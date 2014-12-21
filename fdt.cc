@@ -954,6 +954,10 @@ void
 device_tree::collect_names()
 {
 	node_path p;
+	node_names.clear();
+	node_paths.clear();
+	cross_references.clear();
+	phandles.clear();
 	collect_names_recursive(root, p);
 }
 
@@ -1036,10 +1040,21 @@ void
 device_tree::parse_roots(input_buffer &input, std::vector<node_ptr> &roots)
 {
 	input.next_token();
-	while (valid && input.consume('/'))
+	while (valid && !input.finished())
 	{
-		input.next_token();
-		node_ptr n = node::parse(input, string(), string(), string(), &defines);
+		node_ptr n;
+		if (input.consume('/'))
+		{
+			input.next_token();
+			n = node::parse(input, string(), string(), string(), &defines);
+		}
+		else if (input.consume('&'))
+		{
+			input.next_token();
+			string name = string::parse_node_name(input);
+			input.next_token();
+			n = node::parse(input, name, string(), string(), &defines);
+		}
 		if (n)
 		{
 			roots.push_back(std::move(n));
@@ -1400,9 +1415,30 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 		default:
 		{
 			root = std::move(roots[0]);
-			for (auto i=roots.begin()+1, e=roots.end() ; i!=e ; ++i)
+			for (auto i=++(roots.begin()), e=roots.end() ; i!=e ; ++i)
 			{
-				root->merge_node(std::move(*i));
+				auto &node = *i;
+				string name = node->name;
+				if (name == string())
+				{
+					root->merge_node(std::move(node));
+				}
+				else
+				{
+					auto existing = node_names.find(name);
+					if (existing == node_names.end())
+					{
+						collect_names();
+						existing = node_names.find(name);
+					}
+					if (existing == node_names.end())
+					{
+						fprintf(stderr, "Unable to merge node: ");
+						name.dump();
+						fprintf(stderr, "\n");
+					}
+					existing->second->merge_node(std::move(node));
+				}
 			}
 		}
 	}
