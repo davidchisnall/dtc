@@ -169,8 +169,7 @@ input_buffer::next_token()
 			++(*this);
 		}
 		// Parse // comments and # comments
-		if (((*this)[0] == '/' && (*this)[1] == '/') || 
-		     (*this)[0] == '#')
+		if (((*this)[0] == '/' && (*this)[1] == '/'))
 		{
 			// eat the start of the comment
 			++(*this);
