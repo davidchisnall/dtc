@@ -126,13 +126,25 @@ property_value::resolve_type()
 		bool is_all_printable = true;
 		int nuls = 0;
 		int bytes = 0;
+		bool lastWasNull = false;
 		for (auto i : byte_data)
 		{
 			bytes++;
 			is_all_printable &= (i == '\0') || isprint(i);
 			if (i == '\0')
 			{
+				// If there are two nulls in a row, then we're probably binary.
+				if (lastWasNull)
+				{
+					type = BINARY;
+					return;
+				}
 				nuls++;
+				lastWasNull = true;
+			}
+			else
+			{
+				lastWasNull = false;
 			}
 			if (!is_all_printable)
 			{
