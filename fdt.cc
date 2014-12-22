@@ -849,15 +849,20 @@ node::merge_node(node_ptr other)
 	// over it repeatedly isn't that expensive.
 	for (auto &p : other->properties)
 	{
+		bool found = false;
 		for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
 		{
 			if ((*i)->get_key() == p->get_key())
 			{
-				properties.erase(i);
+				*i = p;
+				found = true;
 				break;
 			}
 		}
-		add_property(p);
+		if (!found)
+		{
+			add_property(p);
+		}
 	}
 	for (auto &c : other->children)
 	{
