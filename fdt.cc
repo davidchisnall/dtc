@@ -154,7 +154,7 @@ property_value::resolve_type()
 		if ((is_all_printable && (bytes > nuls)) || bytes == 0)
 		{
 			type = STRING;
-			if (nuls > 0)
+			if (nuls > 1)
 			{
 				type = STRING_LIST;
 			}
@@ -174,6 +174,12 @@ property_value::write_as_string(FILE *file)
 	}
 	else
 	{
+		bool hasNull = (byte_data.back() == '\0');
+		// Remove trailing null bytes from the string before printing as dts.
+		if (hasNull)
+		{
+			byte_data.pop_back();
+		}
 		for (auto i : byte_data)
 		{
 			// FIXME Escape tabs, newlines, and so on.
@@ -183,6 +189,10 @@ property_value::write_as_string(FILE *file)
 				continue;
 			}
 			putc(i, file);
+		}
+		if (hasNull)
+		{
+			byte_data.push_back('\0');
 		}
 	}
 	putc('"', file);
