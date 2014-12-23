@@ -1099,8 +1099,99 @@ device_tree::resolve_cross_references()
 }
 
 void
-device_tree::parse_roots(input_buffer &input, std::vector<node_ptr> &roots)
+device_tree::parse_file(input_buffer &input,
+                        const std::string &dir,
+                        std::vector<node_ptr> &roots,
+                        FILE *depfile,
+                        bool &read_header)
 {
+	input.next_token();
+	// Read the header
+	if (input.consume("/dts-v1/;"))
+	{
+		read_header = true;
+	}
+	input.next_token();
+	while(input.consume("/include/"))
+	{
+		bool reallyInclude = true;
+		if (input.consume("if "))
+		{
+			input.next_token();
+			string name = string::parse_property_name(input);
+			// XXX: Error handling
+			if (defines.find(name) == defines.end())
+			{
+				reallyInclude = false;
+			}
+			input.consume('/');
+		}
+		input.next_token();
+		if (!input.consume('"'))
+		{
+			input.parse_error("Expected quoted filename");
+			valid = false;
+			return;
+		}
+		int length = 0;
+		while (input[length] != '"') length++;
+
+		std::string file((const char*)input, length);
+		std::string include_file = dir + '/' + file;
+		assert(input.consume(file.c_str()));
+		input.consume('"');
+		if (!reallyInclude)
+		{
+			continue;
+		}
+
+		input_buffer *include_buffer = buffer_for_file(include_file.c_str());
+
+		if (include_buffer == 0)
+		{
+			for (auto i : include_paths)
+			{
+				include_file = i + '/' + file;
+				include_buffer = buffer_for_file(include_file.c_str());
+				if (include_buffer != 0)
+				{
+					break;
+				}
+			}
+		}
+		if (depfile != 0)
+		{
+			putc(' ', depfile);
+			fputs(include_file.c_str(), depfile);
+		}
+		if (include_buffer == 0)
+		{
+			valid = false;
+			return;
+		}
+		parse_file(*include_buffer, dir, roots, depfile, read_header);
+	}
+	input.next_token();
+	if (!read_header)
+	{
+		input.parse_error("Expected /dts-v1/; version string");
+	}
+	// Read any memory reservations
+	while(input.consume("/memreserve/"))
+	{
+		long long start, len;
+		input.next_token();
+		// Read the start and length.
+		if (!(input.consume_integer(start) &&
+		    (input.next_token(),
+		    input.consume_integer(len))))
+		{
+			input.parse_error("Expected size on /memreserve/ node.");
+		}
+		input.next_token();
+		input.consume(';');
+		reservations.push_back(reservation(start, len));
+	}
 	input.next_token();
 	while (valid && !input.finished())
 	{
@@ -1116,6 +1207,10 @@ device_tree::parse_roots(input_buffer &input, std::vector<node_ptr> &roots)
 			string name = string::parse_node_name(input);
 			input.next_token();
 			n = node::parse(input, name, string(), string(), &defines);
+		}
+		else
+		{
+			input.parse_error("Failed to find root node /.");
 		}
 		if (n)
 		{
@@ -1346,6 +1441,7 @@ void
 device_tree::parse_dts(const char *fn, FILE *depfile)
 {
 	input_buffer *in = buffer_for_file(fn);
+	std::string dir(dirname((char*)fn));
 	if (in == 0)
 	{
 		valid = false;
@@ -1353,105 +1449,8 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 	}
 	std::vector<node_ptr> roots;
 	input_buffer &input = *in;
-	input.next_token();
 	bool read_header = false;
-	// Read the header
-	if (input.consume("/dts-v1/;"))
-	{
-		read_header = true;
-	}
-	input.next_token();
-	while(input.consume("/include/"))
-	{
-		bool reallyInclude = true;
-		if (input.consume("if "))
-		{
-			input.next_token();
-			string name = string::parse_property_name(input);
-			// XXX: Error handling
-			if (defines.find(name) == defines.end())
-			{
-				reallyInclude = false;
-			}
-			input.consume('/');
-		}
-		input.next_token();
-		if (!input.consume('"'))
-		{
-			input.parse_error("Expected quoted filename");
-			valid = false;
-			return;
-		}
-		int length = 0;
-		while (input[length] != '"') length++;
-
-		std::string file((const char*)input, length);
-		const char *dir = dirname((char*)fn);
-		std::string include_file(dir);
-		include_file += '/';
-		include_file += file;
-		input.consume(include_file.size());
-		input.consume('"');
-		if (!reallyInclude)
-		{
-			continue;
-		}
-
-		input_buffer *include_buffer = buffer_for_file(include_file.c_str());
-
-		if (include_buffer == 0)
-		{
-			for (auto i : include_paths)
-			{
-				include_file = i + '/' + file;
-				include_buffer = buffer_for_file(include_file.c_str());
-				if (include_buffer != 0)
-				{
-					break;
-				}
-			}
-		}
-		if (depfile != 0)
-		{
-			putc(' ', depfile);
-			fputs(include_file.c_str(), depfile);
-		}
-		if (include_buffer == 0)
-		{
-			valid = false;
-			return;
-		}
-		input_buffer &include = *include_buffer;
-
-		if (!read_header)
-		{
-			include.next_token();
-			read_header = include.consume("/dts-v1/;");
-		}
-		parse_roots(include, roots);
-	}
-	input.next_token();
-	if (!read_header)
-	{
-		input.parse_error("Expected /dts-v1/; version string");
-	}
-	// Read any memory reservations
-	while(input.consume("/memreserve/"))
-	{
-		long long start, len;
-		input.next_token();
-		// Read the start and length.
-		if (!(input.consume_integer(start) &&
-		    (input.next_token(),
-		    input.consume_integer(len))))
-		{
-			input.parse_error("Expected size on /memreserve/ node.");
-		}
-		input.next_token();
-		input.consume(';');
-		reservations.push_back(reservation(start, len));
-	}
-	parse_roots(input, roots);
+	parse_file(input, dir, roots, depfile, read_header);
 	switch (roots.size())
 	{
 		case 0:

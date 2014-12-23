@@ -683,9 +683,16 @@ class device_tree
 	 */
 	void resolve_cross_references();
 	/**
-	 * Parses root nodes from the top level of a dts file.  
+	 * Parses a dts file in the given buffer and adds the roots to the parsed
+	 * set.  The `read_header` argument indicates whether the header has
+	 * already been read.  Some dts files place the header in an include,
+	 * rather than in the top-level file.
 	 */
-	void parse_roots(input_buffer &input, std::vector<node_ptr> &roots);
+	void parse_file(input_buffer &input,
+	                const std::string &dir,
+	                std::vector<node_ptr> &roots,
+	                FILE *depfile,
+	                bool &read_header);
 	/**
 	 * Allocates a new mmap()'d input buffer for use in parsing.  This
 	 * object then keeps a reference to it, ensuring that it is not
