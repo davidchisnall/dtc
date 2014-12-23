@@ -45,6 +45,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "dtb.hh"
+#include <errno.h>
 
 namespace dtc
 {
@@ -1143,7 +1144,7 @@ device_tree::buffer_for_file(const char *path)
 	int source = open(path, O_RDONLY);
 	if (source == -1)
 	{
-		fprintf(stderr, "Unable to open file %s\n", path);
+		fprintf(stderr, "Unable to open file '%s'.  %s\n", path, strerror(errno));
 		return 0;
 	}
 	struct stat st;
