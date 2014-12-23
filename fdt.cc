@@ -33,8 +33,10 @@
 #define __STDC_LIMIT_MACROS 1
 
 #include "fdt.hh"
+#include "dtb.hh"
 
 #include <algorithm>
+
 #include <ctype.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -44,7 +46,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "dtb.hh"
 #include <errno.h>
 
 namespace dtc
@@ -1384,38 +1385,26 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 		int length = 0;
 		while (input[length] != '"') length++;
 
-		const char *file = (const char*)input;
+		std::string file((const char*)input, length);
 		const char *dir = dirname((char*)fn);
-		int dir_length = strlen(dir);
-		char *include_file = (char*)malloc(strlen(dir) + length + 2);
-		memcpy(include_file, dir, dir_length);
-		include_file[dir_length] = '/';
-		memcpy(include_file+dir_length+1, file, length);
-		include_file[dir_length+length+1] = 0;
-
-		input.consume(include_file+dir_length+1);
+		std::string include_file(dir);
+		include_file += '/';
+		include_file += file;
+		input.consume(include_file.size());
 		input.consume('"');
 		if (!reallyInclude)
 		{
 			continue;
 		}
 
-		input_buffer *include_buffer = buffer_for_file(include_file);
+		input_buffer *include_buffer = buffer_for_file(include_file.c_str());
 
 		if (include_buffer == 0)
 		{
 			for (auto i : include_paths)
 			{
-				free(include_file);
-				dir = i;
-				dir_length = strlen(dir);
-				include_file = (char*)malloc(strlen(dir) +
-						length + 2);
-				memcpy(include_file, dir, dir_length);
-				include_file[dir_length] = '/';
-				memcpy(include_file+dir_length+1, file, length);
-				include_file[dir_length+length+1] = 0;
-				include_buffer = buffer_for_file(include_file);
+				include_file = i + '/' + file;
+				include_buffer = buffer_for_file(include_file.c_str());
 				if (include_buffer != 0)
 				{
 					break;
@@ -1425,7 +1414,7 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 		if (depfile != 0)
 		{
 			putc(' ', depfile);
-			fputs(include_file, depfile);
+			fputs(include_file.c_str(), depfile);
 		}
 		if (include_buffer == 0)
 		{
@@ -1433,7 +1422,6 @@ device_tree::parse_dts(const char *fn, FILE *depfile)
 			return;
 		}
 		input_buffer &include = *include_buffer;
-		free((void*)include_file);
 
 		if (!read_header)
 		{

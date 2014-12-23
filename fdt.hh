@@ -33,7 +33,9 @@
 #ifndef _FDT_HH_
 #define _FDT_HH_
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
+#include <string>
 
 #include "util.hh"
 #include "string.hh"
@@ -612,6 +614,10 @@ class device_tree
 	 */
 	std::vector<property_value*> phandles;
 	/**
+	 * The names of nodes that target phandles.
+	 */
+	std::unordered_set<string> phandle_targets;
+	/**
 	 * A collection of input buffers that we are using.  These input
 	 * buffers are the ones that own their memory, and so we must preserve
 	 * them for the lifetime of the device tree.  
@@ -632,7 +638,7 @@ class device_tree
 	 * nul-terminated strings, which are not owned by this class and so
 	 * must be freed separately.
 	 */
-	std::vector<const char*> include_paths;
+	std::vector<std::string> include_paths;
 	/**
 	 * Dictionary of predefined macros provided on the command line.
 	 */
@@ -660,6 +666,12 @@ class device_tree
 	 * properties that have been explicitly added.  
 	 */
 	void collect_names_recursive(node_ptr &n, node_path &path);
+	/**
+	 * Assign phandle properties to all nodes that have been referenced and
+	 * require one.  This method will recursively visit the tree starting at
+	 * the node that it is passed.
+	 */
+	void assign_phandles(node_ptr &n, uint32_t &next);
 	/**
 	 * Calls the recursive version of this method on every root node.
 	 */
@@ -767,7 +779,8 @@ class device_tree
 	 */
 	void add_include_path(const char *path)
 	{
-		include_paths.push_back(path);
+		std::string p(path);
+		include_paths.push_back(std::move(p));
 	}
 	/**
 	 * Sets the number of empty reserve map entries to add.
