@@ -270,7 +270,7 @@ class property
 	/**
 	 * Parses one or more 32-bit values enclosed in angle brackets.
 	 */
-	void parse_cells(input_buffer &input);
+	void parse_cells(input_buffer &input, int cell_size);
 	/**
 	 * Parses an array of bytes, contained within square brackets.
 	 */

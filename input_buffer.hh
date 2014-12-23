@@ -185,7 +185,7 @@ class input_buffer
 	 *
 	 * The parsed value is returned via the argument.
 	 */
-	bool consume_integer(long long &outInt);
+	bool consume_integer(unsigned long long &outInt);
 	/**
 	 * Template function that consumes a binary value in big-endian format
 	 * from the input stream.  Returns true and advances the cursor if

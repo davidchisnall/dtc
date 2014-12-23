@@ -113,7 +113,7 @@ input_buffer::consume(const char *str)
 }
 
 bool
-input_buffer::consume_integer(long long &outInt)
+input_buffer::consume_integer(unsigned long long &outInt)
 {
 	// The first character must be a digit.  Hex and octal strings
 	// are prefixed by 0 and 0x, respectively.
@@ -122,7 +122,7 @@ input_buffer::consume_integer(long long &outInt)
 		return false;
 	}
 	char *end=0;
-	outInt = strtoll(&buffer[cursor], &end, 0);
+	outInt = strtoull(&buffer[cursor], &end, 0);
 	if (end == &buffer[cursor])
 	{
 		return false;

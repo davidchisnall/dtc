@@ -262,8 +262,26 @@ property::parse_string(input_buffer &input)
 }
 
 void
-property::parse_cells(input_buffer &input)
+property::parse_cells(input_buffer &input, int cell_size)
 {
+	unsigned long long cell_max;
+	switch (cell_size)
+	{
+		case 8:
+			cell_max = UINT8_MAX;
+			break;
+		case 16:
+			cell_max = UINT16_MAX;
+			break;
+		case 32:
+			cell_max = UINT32_MAX;
+			break;
+		case 64:
+			cell_max = UINT64_MAX;
+			break;
+		default:
+			assert(0 && "Invalid cell size!");
+	}
 	assert(input[0] == '<');
 	++input;
 	property_value v;
@@ -275,6 +293,12 @@ property::parse_cells(input_buffer &input)
 		// referenced node
 		if (input.consume('&'))
 		{
+			if (cell_size != 32)
+			{
+				input.parse_error("reference only permitted in 32-bit arrays");
+				valid = false;
+				return;
+			}
 			input.next_token();
 			// FIXME: We should support full paths here, but we
 			// don't.
@@ -302,20 +326,37 @@ property::parse_cells(input_buffer &input)
 		{
 			//FIXME: We should support labels in the middle
 			//of these, but we don't.
-			long long val;
+			unsigned long long val;
 			if (!input.consume_integer(val))
 			{
 				input.parse_error("Expected numbers in array of cells");
 				valid = false;
 				return;
 			}
-			if ((val < 0) || (val > UINT32_MAX))
+			if (val > cell_max)
 			{
+				fprintf(stderr, "%lld > %lld\n", val, cell_max);
 				input.parse_error("Value out of range");
 				valid = false;
 				return;
 			}
-			push_big_endian(v.byte_data, (uint32_t)val);
+			switch (cell_size)
+			{
+				case 8:
+					v.byte_data.push_back(val);
+					break;
+				case 16:
+					push_big_endian(v.byte_data, (uint16_t)val);
+					break;
+				case 32:
+					push_big_endian(v.byte_data, (uint32_t)val);
+					break;
+				case 64:
+					push_big_endian(v.byte_data, (uint64_t)val);
+					break;
+				default:
+					assert(0 && "Invalid cell size!");
+			}
 			input.next_token();
 		}
 	}
@@ -456,11 +497,35 @@ property::property(input_buffer &input,
 				input.parse_error("Invalid property value.");
 				valid = false;
 				return;
+			case '/':
+			{
+				unsigned long long bits = 0;
+				valid = input.consume("/bits/");
+				input.next_token();
+				valid &= input.consume_integer(bits);
+				if ((bits != 8) &&
+				    (bits != 16) &&
+				    (bits != 32) &&
+				    (bits != 64)) {
+					input.parse_error("Invalid size for elements");
+					valid = false;
+				}
+				if (!valid) return;
+				input.next_token();
+				if (input[0] != '<')
+				{
+					input.parse_error("/bits/ directive is only valid on arrays");
+					valid = false;
+					return;
+				}
+				parse_cells(input, bits);
+				break;
+			}
 			case '"':
 				parse_string(input);
 				break;
 			case '<':
-				parse_cells(input);
+				parse_cells(input, 32);
 				break;
 			case '[':
 				parse_bytes(input);
@@ -1179,7 +1244,7 @@ device_tree::parse_file(input_buffer &input,
 	// Read any memory reservations
 	while(input.consume("/memreserve/"))
 	{
-		long long start, len;
+		unsigned long long start, len;
 		input.next_token();
 		// Read the start and length.
 		if (!(input.consume_integer(start) &&
