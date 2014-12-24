@@ -1205,6 +1205,7 @@ device_tree::parse_file(input_buffer &input,
 		std::string include_file = dir + '/' + file;
 		assert(input.consume(file.c_str()));
 		input.consume('"');
+		input.next_token();
 		if (!reallyInclude)
 		{
 			continue;
