@@ -683,6 +683,14 @@ class device_tree
 	 */
 	void resolve_cross_references();
 	/**
+	 * Parse a top-level include directive.
+	 */
+	bool parse_include(input_buffer &input,
+	                   const std::string &dir,
+	                   std::vector<node_ptr> &roots,
+	                   FILE *depfile,
+	                   bool &read_header);
+	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has
 	 * already been read.  Some dts files place the header in an include,
