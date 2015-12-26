@@ -225,7 +225,7 @@ struct paren_expression : public expression
 	 * Constructor.  Takes the child expression as the only argument.
 	 */
 	paren_expression(expression_ptr p) : subexpr(std::move(p)) {}
-	int precedence()
+	int precedence() override
 	{
 		return 0;
 	}
