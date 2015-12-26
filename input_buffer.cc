@@ -350,6 +350,52 @@ struct binary_operator : public binary_operator_base
 #endif
 };
 
+/**
+ * Ternary conditional operators (`cond ? true : false`) are a special case -
+ * there are no other ternary operators.
+ */
+class ternary_conditional_operator : public expression
+{
+	/**
+	 * The condition for the clause.
+	 */
+	expression_ptr cond;
+	/**
+	 * The expression that this evaluates to if the condition is true.
+	 */
+	expression_ptr lhs;
+	/**
+	 * The expression that this evaluates to if the condition is false.
+	 */
+	expression_ptr rhs;
+	valty operator()() override
+	{
+		return (*cond)() ? (*lhs)() : (*rhs)();
+	}
+	int precedence() override
+	{
+		// The actual precedence of a ternary conditional operator is 15, but
+		// its associativity is the opposite way around to the other operators,
+		// so we fudge it slightly.
+		return 3;
+	}
+#ifndef NDEBUG
+	void dump_impl() override
+	{
+		cond->dump();
+		std::cerr << " ? ";
+		lhs->dump();
+		std::cerr << " : ";
+		rhs->dump();
+	}
+#endif
+	public:
+	ternary_conditional_operator(expression_ptr c,
+	                             expression_ptr l,
+	                             expression_ptr r) :
+		cond(std::move(c)), lhs(std::move(l)), rhs(std::move(r)) {}
+};
+
 template<typename T>
 struct lshift
 {
@@ -492,6 +538,25 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				expr = new binary_operator<14, std::bit_or<valty>>("|");
 			}
 			break;
+		case '?':
+		{
+			consume('?');
+			expression_ptr true_case = std::move(parse_expression());
+			next_token();
+			if (!true_case || !consume(':'))
+			{
+				parse_error("Expected : in ternary conditional operator");
+				return nullptr;
+			}
+			expression_ptr false_case = std::move(parse_expression());
+			if (!false_case)
+			{
+				parse_error("Expected false condition for ternary operator");
+				return nullptr;
+			}
+			return expression_ptr(new ternary_conditional_operator(std::move(lhs),
+						std::move(true_case), std::move(false_case)));
+		}
 	}
 	cursor++;
 	next_token();
