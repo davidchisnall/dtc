@@ -309,7 +309,7 @@ property::parse_cells(input_buffer &input, int cell_size)
 			//FIXME: We should support labels in the middle
 			//of these, but we don't.
 			unsigned long long val;
-			if (!input.consume_integer(val))
+			if (!input.consume_integer_expression(val))
 			{
 				input.parse_error("Expected numbers in array of cells");
 				valid = false;
@@ -1235,9 +1235,9 @@ device_tree::parse_file(input_buffer &input,
 		unsigned long long start, len;
 		input.next_token();
 		// Read the start and length.
-		if (!(input.consume_integer(start) &&
+		if (!(input.consume_integer_expression(start) &&
 		    (input.next_token(),
-		    input.consume_integer(len))))
+		    input.consume_integer_expression(len))))
 		{
 			input.parse_error("Expected size on /memreserve/ node.");
 		}
