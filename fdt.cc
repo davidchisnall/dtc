@@ -264,24 +264,6 @@ property::parse_string(input_buffer &input)
 void
 property::parse_cells(input_buffer &input, int cell_size)
 {
-	unsigned long long cell_max;
-	switch (cell_size)
-	{
-		case 8:
-			cell_max = UINT8_MAX;
-			break;
-		case 16:
-			cell_max = UINT16_MAX;
-			break;
-		case 32:
-			cell_max = UINT32_MAX;
-			break;
-		case 64:
-			cell_max = UINT64_MAX;
-			break;
-		default:
-			assert(0 && "Invalid cell size!");
-	}
 	assert(input[0] == '<');
 	++input;
 	property_value v;
@@ -330,13 +312,6 @@ property::parse_cells(input_buffer &input, int cell_size)
 			if (!input.consume_integer(val))
 			{
 				input.parse_error("Expected numbers in array of cells");
-				valid = false;
-				return;
-			}
-			if (val > cell_max)
-			{
-				fprintf(stderr, "%lld > %lld\n", val, cell_max);
-				input.parse_error("Value out of range");
 				valid = false;
 				return;
 			}
