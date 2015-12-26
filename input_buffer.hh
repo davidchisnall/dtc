@@ -233,12 +233,14 @@ class input_buffer
 	 * Prints a message indicating the location of a parse error.
 	 */
 	void parse_error(const char *msg);
+#ifndef NDEBUG
 	/**
 	 * Dumps the current cursor value and the unconsumed values in the
 	 * input buffer to the standard error.  This method is intended solely
 	 * for debugging.
 	 */
 	void dump();
+#endif
 };
 /**
  * Explicit specialisation for reading a single byte.

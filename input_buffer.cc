@@ -222,12 +222,14 @@ input_buffer::parse_error(const char *msg)
 	putc('^', stderr);
 	putc('\n', stderr);
 }
+#ifndef NDEBUG
 void
 input_buffer::dump()
 {
 	fprintf(stderr, "Current cursor: %d\n", cursor);
 	fwrite(&buffer[cursor], size-cursor, 1, stderr);
 }
+#endif
 
 mmap_input_buffer::mmap_input_buffer(int fd) : input_buffer(0, 0)
 {
