@@ -1436,7 +1436,7 @@ device_tree::write_dts(int fd)
 }
 
 void
-device_tree::parse_dtb(const char *fn, FILE *depfile)
+device_tree::parse_dtb(const char *fn, FILE *)
 {
 	input_buffer *in = buffer_for_file(fn);
 	if (in == 0)
