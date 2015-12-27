@@ -441,7 +441,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 	switch (op)
 	{
 		default:
-			return std::move(lhs);
+			return lhs;
 		case '+':
 			expr = new binary_operator<6, std::plus<valty>>("+");
 			break;
@@ -497,7 +497,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				case '>':
 					expr = new binary_operator<7, rshift<valty>>(">>");
 					break;
-					return std::move(lhs);
+					return lhs;
 			}
 			break;
 		case '=':
@@ -541,14 +541,14 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 		case '?':
 		{
 			consume('?');
-			expression_ptr true_case = std::move(parse_expression());
+			expression_ptr true_case = parse_expression();
 			next_token();
 			if (!true_case || !consume(':'))
 			{
 				parse_error("Expected : in ternary conditional operator");
 				return nullptr;
 			}
-			expression_ptr false_case = std::move(parse_expression());
+			expression_ptr false_case = parse_expression();
 			if (!false_case)
 			{
 				parse_error("Expected false condition for ternary operator");
@@ -579,9 +579,9 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 			static_cast<binary_operator_base*>(rhs.get());
 		rhs_op->insert_left(expr);
 		e.release();
-		return std::move(rhs);
+		return rhs;
 	}
-	return std::move(e);
+	return e;
 }
 
 expression_ptr input_buffer::parse_expression(bool stopAtParen)
@@ -613,7 +613,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			}
 			if (stopAtParen)
 			{
-				return std::move(lhs);
+				return lhs;
 			}
 			break;
 		}
@@ -666,7 +666,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 	{
 		return nullptr;
 	}
-	return std::move(parse_binary_expression(std::move(lhs)));
+	return parse_binary_expression(std::move(lhs));
 }
 
 bool
