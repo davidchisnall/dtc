@@ -727,7 +727,7 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 					valid = false;
 					return;
 				}
-				properties.push_back(prop);
+				props.push_back(prop);
 				break;
 			}
 				break;
@@ -791,7 +791,7 @@ node::node(input_buffer &input, string n, string l, string a, define_map *define
 			}
 			else
 			{
-				properties.push_back(p);
+				props.push_back(p);
 			}
 		}
 		else if (!is_property && input[0] == ('{'))
@@ -809,7 +809,7 @@ node::node(input_buffer &input, string n, string l, string a, define_map *define
 		}
 		else if (input.consume(';'))
 		{
-			properties.push_back(property_ptr(new property(child_name, child_label)));
+			props.push_back(property_ptr(new property(child_name, child_label)));
 		}
 		else
 		{
@@ -877,7 +877,7 @@ node::parse_dtb(input_buffer &structs, input_buffer &strings)
 property_ptr
 node::get_property(string key)
 {
-	for (auto &i : properties)
+	for (auto &i : props)
 	{
 		if (i->get_key() == key)
 		{
@@ -899,7 +899,7 @@ node::merge_node(node_ptr other)
 	// large numbers of properties, but for typical usage the
 	// entire vector will fit (easily) into cache, so iterating
 	// over it repeatedly isn't that expensive.
-	for (auto &p : other->properties)
+	for (auto &p : other->properties())
 	{
 		bool found = false;
 		for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
