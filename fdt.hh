@@ -539,6 +539,10 @@ class node
 	 * with this number of tabs.  
 	 */
 	void write_dts(FILE *file, int indent);
+	/**
+	 * Recursively visit this node and then its children.
+	 */
+	void visit(std::function<void(node&)>);
 };
 
 /**

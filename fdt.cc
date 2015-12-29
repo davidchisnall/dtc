@@ -660,6 +660,16 @@ node::parse_name(input_buffer &input, bool &is_property, const char *error)
 	return n;
 }
 
+void
+node::visit(std::function<void(node&)> fn)
+{
+	fn(*this);
+	for (auto &&c : children)
+	{
+		c->visit(fn);
+	}
+}
+
 node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 {
 	const char *name_start = (const char*)structs;
