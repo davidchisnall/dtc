@@ -1089,6 +1089,7 @@ device_tree::resolve_cross_references()
 			{
 				pv->byte_data.push_back('@');
 				p->second.push_to_buffer(pv->byte_data);
+				pv->byte_data.push_back(0);
 			}
 		}
 	}
