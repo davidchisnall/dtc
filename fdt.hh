@@ -706,7 +706,7 @@ class device_tree
 	 * object then keeps a reference to it, ensuring that it is not
 	 * deallocated until the device tree is destroyed.
 	 */
-	input_buffer *buffer_for_file(const char *path);
+	input_buffer *buffer_for_file(const char *path, bool warn=true);
 	/**
 	 * Template function that writes a dtb blob using the specified writer.
 	 * The writer defines the output format (assembly, blob).

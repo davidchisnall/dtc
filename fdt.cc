@@ -1174,14 +1174,14 @@ device_tree::parse_include(input_buffer &input,
 	std::string file((const char*)input, length);
 	std::string include_file = dir + '/' + file;
 	input.consume(file.c_str());
-	input.consume('"');
-	input.next_token();
 	if (!reallyInclude)
 	{
+		input.consume('"');
+		input.next_token();
 		return true;
 	}
 
-	input_buffer *include_buffer = buffer_for_file(include_file.c_str());
+	input_buffer *include_buffer = buffer_for_file(include_file.c_str(), false);
 
 	if (include_buffer == 0)
 	{
@@ -1202,9 +1202,14 @@ device_tree::parse_include(input_buffer &input,
 	}
 	if (include_buffer == 0)
 	{
+		input.parse_error("Unable to locate input file");
+		input.consume('"');
+		input.next_token();
 		valid = false;
 		return true;
 	}
+	input.consume('"');
+	input.next_token();
 	parse_file(*include_buffer, dir, roots, depfile, read_header);
 	return true;
 }
@@ -1280,7 +1285,7 @@ device_tree::parse_file(input_buffer &input,
 }
 
 input_buffer*
-device_tree::buffer_for_file(const char *path)
+device_tree::buffer_for_file(const char *path, bool warn)
 {
 	if (string(path) == string("-"))
 	{
@@ -1295,7 +1300,10 @@ device_tree::buffer_for_file(const char *path)
 	int source = open(path, O_RDONLY);
 	if (source == -1)
 	{
-		fprintf(stderr, "Unable to open file '%s'.  %s\n", path, strerror(errno));
+		if (warn)
+		{
+			fprintf(stderr, "Unable to open file '%s'.  %s\n", path, strerror(errno));
+		}
 		return 0;
 	}
 	struct stat st;
