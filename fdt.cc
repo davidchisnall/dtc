@@ -842,9 +842,9 @@ node::sort()
 {
 	std::sort(property_begin(), property_end(), cmp_properties);
 	std::sort(child_begin(), child_end(), cmp_children);
-	for (child_iterator i=child_begin(), e=child_end() ; i!=e ; ++i)
+	for (auto &c : child_nodes())
 	{
-		(*i)->sort();
+		c->sort();
 	}
 }
 
@@ -902,11 +902,11 @@ node::merge_node(node_ptr other)
 	for (auto &p : other->properties())
 	{
 		bool found = false;
-		for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
+		for (auto &mp : properties())
 		{
-			if ((*i)->get_key() == p->get_key())
+			if (mp->get_key() == p->get_key())
 			{
-				*i = p;
+				mp = p;
 				found = true;
 				break;
 			}
@@ -949,13 +949,13 @@ node::write(dtb::output_writer &writer, dtb::string_table &strings)
 	writer.write_comment(name);
 	writer.write_data(name_buffer);
 	writer.write_data((uint8_t)0);
-	for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
+	for (auto p : properties())
 	{
-		(*i)->write(writer, strings);
+		p->write(writer, strings);
 	}
-	for (child_iterator i=child_begin(), e=child_end() ; i!=e ; ++i)
+	for (auto &c : child_nodes())
 	{
-		(*i)->write(writer, strings);
+		c->write(writer, strings);
 	}
 	writer.write_token(dtb::FDT_END_NODE);
 }
@@ -984,13 +984,13 @@ node::write_dts(FILE *file, int indent)
 		unit_address.print(file);
 	}
 	fputs(" {\n\n", file);
-	for (auto i=property_begin(), e=property_end() ; i!=e ; ++i)
+	for (auto p : properties())
 	{
-		(*i)->write_dts(file, indent+1);
+		p->write_dts(file, indent+1);
 	}
-	for (child_iterator i=child_begin(), e=child_end() ; i!=e ; ++i)
+	for (auto &c : child_nodes())
 	{
-		(*i)->write_dts(file, indent+1);
+		c->write_dts(file, indent+1);
 	}
 	for (int i=0 ; i<indent ; i++)
 	{
@@ -1024,30 +1024,30 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 			fprintf(stderr, ".  References to this label will not be resolved.");
 		}
 	}
-	for (node::child_iterator i=n->child_begin(), e=n->child_end() ; i!=e ; ++i)
+	for (auto &c : n->child_nodes())
 	{
-		collect_names_recursive(*i, path);
+		collect_names_recursive(c, path);
 	}
 	path.pop_back();
 	// Now we collect the phandles and properties that reference
 	// other nodes.
-	for (auto i=n->property_begin(), e=n->property_end() ; i!=e ; ++i)
+	for (auto &p : n->properties())
 	{
-		for (property::value_iterator p=(*i)->begin(),pe=(*i)->end() ; p!=pe ; ++p)
+		for (auto &v : *p)
 		{
-			if (p->is_phandle())
+			if (v.is_phandle())
 			{
-				phandles.push_back(&*p);
+				phandles.push_back(&v);
 			}
-			if (p->is_cross_reference())
+			if (v.is_cross_reference())
 			{
-				cross_references.push_back(&*p);
+				cross_references.push_back(&v);
 			}
 		}
-		if ((*i)->get_key() == string("phandle") ||
-		    (*i)->get_key() == string("linux,phandle"))
+		if (p->get_key() == string("phandle") ||
+		    p->get_key() == string("linux,phandle"))
 		{
-			if ((*i)->begin()->byte_data.size() != 4)
+			if (p->begin()->byte_data.size() != 4)
 			{
 				fprintf(stderr, "Invalid phandle value for node ");
 				n->name.dump();
@@ -1056,7 +1056,7 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 			}
 			else
 			{
-				uint32_t phandle = (*i)->begin()->get_as_uint32();
+				uint32_t phandle = p->begin()->get_as_uint32();
 				used_phandles.insert(std::make_pair(phandle, n.get()));
 			}
 		}
