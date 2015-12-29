@@ -1092,8 +1092,28 @@ device_tree::resolve_cross_references()
 			}
 		}
 	}
-	uint32_t phandle = 1;
+	std::unordered_set<property_value*> phandle_set;
 	for (auto &i : phandles)
+	{
+		phandle_set.insert(i);
+	}
+	std::vector<property_value*> sorted_phandles;
+	root->visit([&](node &n) {
+		for (auto &p : n.properties())
+		{
+			for (auto &v : *p)
+			{
+				if (phandle_set.count(&v))
+				{
+					sorted_phandles.push_back(&v);
+				}
+			}
+		}
+	});
+	assert(sorted_phandles.size() == phandles.size());
+
+	uint32_t phandle = 1;
+	for (auto &i : sorted_phandles)
 	{
 		string target_name = i->string_data;
 		node *target = node_names[target_name];
