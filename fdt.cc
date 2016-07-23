@@ -1340,7 +1340,10 @@ device_tree::buffer_for_file(const char *path, bool warn)
 	struct stat st;
 	if (fstat(source, &st) == 0 && S_ISDIR(st.st_mode))
 	{
-		fprintf(stderr, "File %s is a directory\n", path);
+		if (warn)
+		{
+			fprintf(stderr, "File %s is a directory\n", path);
+		}
 		close(source);
 		return 0;
 	}
