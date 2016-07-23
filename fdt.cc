@@ -1219,7 +1219,7 @@ device_tree::parse_include(input_buffer &input,
 		for (auto i : include_paths)
 		{
 			include_file = i + '/' + file;
-			include_buffer = buffer_for_file(include_file.c_str());
+			include_buffer = buffer_for_file(include_file.c_str(), false);
 			if (include_buffer != 0)
 			{
 				break;
