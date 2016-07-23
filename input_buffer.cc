@@ -163,7 +163,8 @@ struct expression
 	 */
 	void dump(bool nl=false)
 	{
-		if (this == nullptr)
+		void *ptr = this;
+		if (ptr == nullptr)
 		{
 			std::cerr << "{nullptr}\n";
 			return;
