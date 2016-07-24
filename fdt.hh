@@ -498,10 +498,18 @@ class node
 	{
 		return children.end();
 	}
+	/**
+	 * Returns a range suitable for use in a range-based for loop describing
+	 * the children of this node.
+	 */
 	inline child_range child_nodes()
 	{
 		return child_range(*this);
 	}
+	/**
+	 * Returns a range suitable for use in a range-based for loop describing
+	 * the properties of this node.
+	 */
 	inline property_range properties()
 	{
 		return property_range(*this);
