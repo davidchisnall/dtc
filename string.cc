@@ -152,6 +152,25 @@ string::operator==(const string& other) const
 }
 
 bool
+string::operator==(const std::string &other) const
+{
+	if (length != other.size())
+	{
+		return false;
+	}
+	auto i=begin();
+	for (auto ii : other)
+	{
+		if (*i != ii)
+		{
+			return false;
+		}
+		++i;
+	}
+	return true;
+}
+
+bool
 string::operator==(const char *other) const
 {
 	return strncmp(other, start, length) == 0;

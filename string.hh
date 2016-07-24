@@ -62,6 +62,10 @@ class string
 	static string parse(input_buffer &s);
 	public:
 	/**
+	 * Type used for iterators.
+	 */
+	typedef const char* string_iterator;
+	/**
 	 * Constructs a string referring into another buffer.
 	 */
 	string(const char *s, int l) : start(s), length(l) {}
@@ -97,11 +101,27 @@ class string
 	 */
 	bool operator==(const string& other) const;
 	/**
+	 * Subscript operator.  Returns the character at the specified index, or 0
+	 * if the index is out of range.
+	 */
+	char operator[](int idx) const
+	{
+		if (length < idx)
+		{
+			return 0;
+		}
+		return start[idx];
+	}
+	/**
 	 * Compares a string against a C string.  The trailing nul in the C
 	 * string is ignored for the purpose of comparison, so this will always
 	 * fail if the string contains nul bytes.
 	 */
 	bool operator==(const char *other) const;
+	/**
+	 * Compares a string against a standard string.
+	 */
+	bool operator==(const std::string &other) const;
 	/**
 	 * Inequality operator, defined as the inverse of the equality
 	 * operator.
@@ -138,6 +158,28 @@ class string
 	 * Prints the string to the specified output stream.
 	 */
 	void print(FILE *file);
+	/**
+	 * Returns a std::string containing a copy of the characters in this
+	 * string.
+	 */
+	std::string str()
+	{
+		return std::string(start, length);
+	}
+	/**
+	 * Iterator for the start of the string.
+	 */
+	inline string_iterator begin() const
+	{
+		return start;
+	}
+	/**
+	 * Iterator for the end of the string.
+	 */
+	inline string_iterator end() const
+	{
+		return start+length;
+	}
 	/**
 	 * Dumps the string to the standard error stream.  Intended to be used
 	 * for debugging.
