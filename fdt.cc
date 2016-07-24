@@ -36,6 +36,7 @@
 #include "dtb.hh"
 
 #include <algorithm>
+#include <sstream>
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -282,9 +283,25 @@ property::parse_cells(input_buffer &input, int cell_size)
 				return;
 			}
 			input.next_token();
-			// FIXME: We should support full paths here, but we
-			// don't.
-			string referenced = string::parse_node_name(input);
+			bool isPath = false;
+			string referenced;
+			if (!input.consume('{'))
+			{
+				referenced = string::parse_node_name(input);
+			}
+			else
+			{
+				const char *start = (const char*)input;
+				int length = 0;
+				while (input[0] != '}')
+				{
+					++input;
+					++length;
+				}
+				referenced = string(start, length);
+				input.consume('}');
+				isPath = true;
+			}
 			if (referenced.empty())
 			{
 				input.parse_error("Expected node name");
@@ -1117,8 +1134,41 @@ device_tree::resolve_cross_references()
 	for (auto &i : sorted_phandles)
 	{
 		string target_name = i->string_data;
-		node *target = node_names[target_name];
-		if (target == 0)
+		node *target = nullptr;
+		// If the node name is a path, then look it up by following the path,
+		// otherwise jump directly to the named node.
+		if (target_name[0] == '/')
+		{
+			target = root.get();
+			std::istringstream ss(target_name.str());
+			std::string node_name;
+			// Read the leading /
+			std::getline(ss, node_name, '/');
+			// Iterate over path elements
+			while (!ss.eof())
+			{
+				std::getline(ss, node_name, '/');
+				node *next = nullptr;
+				for (auto &c : target->child_nodes())
+				{
+					if (c->name == node_name)
+					{
+						next = c.get();
+						break;
+					}
+				}
+				target = next;
+				if (target == nullptr)
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			target = node_names[target_name];
+		}
+		if (target == nullptr)
 		{
 			fprintf(stderr, "Failed to find node with label: ");
 			target_name.dump();
