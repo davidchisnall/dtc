@@ -154,7 +154,7 @@ string::operator==(const string& other) const
 bool
 string::operator==(const std::string &other) const
 {
-	if (length != other.size())
+	if ((size_t)length != other.size())
 	{
 		return false;
 	}
