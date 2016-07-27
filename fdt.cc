@@ -1038,7 +1038,7 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 			}
 			fprintf(stderr, "Label not unique: ");
 			name.dump();
-			fprintf(stderr, ".  References to this label will not be resolved.");
+			fprintf(stderr, ".  References to this label will not be resolved.\n");
 		}
 	}
 	for (auto &c : n->child_nodes())
