@@ -1097,16 +1097,21 @@ device_tree::resolve_cross_references()
 	for (auto *pv : cross_references)
 	{
 		node_path path = node_paths[pv->string_data];
-		// Skip the first name in the path.  It's always "", and implicitly /
-		for (auto p=path.begin()+1, pe=path.end() ; p!=pe ; ++p)
+		auto p = path.begin();
+		auto pe = path.end();
+		if (p != pe)
 		{
-			pv->byte_data.push_back('/');
-			p->first.push_to_buffer(pv->byte_data);
-			if (!(p->second.empty()))
+			// Skip the first name in the path.  It's always "", and implicitly /
+			for (++p ; p!=pe ; ++p)
 			{
-				pv->byte_data.push_back('@');
-				p->second.push_to_buffer(pv->byte_data);
-				pv->byte_data.push_back(0);
+				pv->byte_data.push_back('/');
+				p->first.push_to_buffer(pv->byte_data);
+				if (!(p->second.empty()))
+				{
+					pv->byte_data.push_back('@');
+					p->second.push_to_buffer(pv->byte_data);
+					pv->byte_data.push_back(0);
+				}
 			}
 		}
 	}
