@@ -1030,7 +1030,7 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 		}
 		else
 		{
-			node_names[name] = (node*)-1;
+			node_names[name] = nullptr;
 			auto i = node_paths.find(name);
 			if (i != node_paths.end())
 			{
