@@ -97,6 +97,30 @@ class input_buffer
 	void skip_spaces();
 	public:
 	/**
+	 * Location in the source file.  This should never be interpreted by
+	 * anything other than error reporting functions of this class.  It will
+	 * eventually become something more complex than an `int`.
+	 */
+	class source_location
+	{
+		friend class input_buffer;
+		int cursor;
+		input_buffer &buffer;
+		source_location(int c, input_buffer &b) : cursor(c), buffer(b) {}
+		public:
+		void report_error(const char *msg)
+		{
+			buffer.parse_error(msg, cursor);
+		}
+	};
+	/**
+	 * Returns the current source location.
+	 */
+	source_location location()
+	{
+		return { cursor, *this };
+	}
+	/**
 	 * Skips all characters in the input until the specified character is
 	 * encountered.
 	 */
@@ -259,6 +283,12 @@ class input_buffer
 	 * Prints a message indicating the location of a parse error.
 	 */
 	void parse_error(const char *msg);
+	/**
+	 * Prints a message indicating the location of a parse error, given a
+	 * specified location.  This is used when input has already moved beyond
+	 * the location that caused the failure.
+	 */
+	void parse_error(const char *msg, int loc);
 #ifndef NDEBUG
 	/**
 	 * Dumps the current cursor value and the unconsumed values in the

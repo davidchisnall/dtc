@@ -162,15 +162,27 @@ typedef unsigned long long valty;
  */
 struct expression
 {
+	typedef input_buffer::source_location source_location;
+	/**
+	 * The type that is returned when computing the result.  The boolean value
+	 * indicates whether this is a valid expression.
+	 *
+	 * FIXME: Once we can use C++17, this should be `std::optional`.
+	 */
+	typedef std::pair<valty, bool> result;
 	/**
 	 * Evaluate this node, taking into account operator precedence.
 	 */
-	virtual valty operator()() = 0;
+	virtual result operator()() = 0;
 	/**
 	 * Returns the precedence of this node.  Lower values indicate higher
 	 * precedence.
 	 */
 	virtual int precedence() = 0;
+	/**
+	 * Constructs an expression, storing the location where it was created.
+	 */
+	expression(source_location l) : loc(l) {}
 	virtual ~expression() {}
 #ifndef NDEBUG
 	/**
@@ -197,6 +209,8 @@ struct expression
 	 */
 	virtual void dump_impl() = 0;
 #endif
+	protected:
+	source_location loc;
 };
 
 /**
@@ -211,9 +225,9 @@ class terminal_expr : public expression
 	/**
 	 * Evaluate.  Trivially returns the value that this class wraps.
 	 */
-	valty operator()() override
+	result operator()() override
 	{
-		return val;
+		return {val, true};
 	}
 	int precedence() override
 	{
@@ -223,7 +237,7 @@ class terminal_expr : public expression
 	/**
 	 * Constructor.
 	 */
-	terminal_expr(valty v) : val(v) {}
+	terminal_expr(source_location l, valty v) : expression(l), val(v) {}
 #ifndef NDEBUG
 	void dump_impl() override { std::cerr << val; }
 #endif
@@ -241,7 +255,8 @@ struct paren_expression : public expression
 	/**
 	 * Constructor.  Takes the child expression as the only argument.
 	 */
-	paren_expression(expression_ptr p) : subexpr(std::move(p)) {}
+	paren_expression(source_location l, expression_ptr p) : expression(l),
+	subexpr(std::move(p)) {}
 	int precedence() override
 	{
 		return 0;
@@ -249,7 +264,7 @@ struct paren_expression : public expression
 	/**
 	 * Evaluate - just forwards to the underlying expression.
 	 */
-	valty operator()() override
+	result operator()() override
 	{
 		return (*subexpr)();
 	}
@@ -277,10 +292,15 @@ class unary_operator : public expression
 	 * The subexpression for this unary operator.
 	 */
 	expression_ptr subexpr;
-	valty operator()() override
+	result operator()() override
 	{
 		Op op;
-		return op((*subexpr)());
+		result s = (*subexpr)();
+		if (!s.second)
+		{
+			return s;
+		}
+		return {op(s.first), true};
 	}
 	/**
 	 * All unary operators have the same precedence.  They are all evaluated
@@ -291,7 +311,8 @@ class unary_operator : public expression
 		return 3;
 	}
 	public:
-	unary_operator(expression_ptr p) : subexpr(std::move(p)) {}
+	unary_operator(source_location l, expression_ptr p) :
+		expression(l), subexpr(std::move(p)) {}
 #ifndef NDEBUG
 	void dump_impl() override
 	{
@@ -307,6 +328,7 @@ class unary_operator : public expression
  */
 struct binary_operator_base : public expression
 {
+	using expression::expression;
 	/**
 	 * The left side of the expression.
 	 */
@@ -340,10 +362,16 @@ struct binary_operator_base : public expression
 template<int Precedence, class Op>
 struct binary_operator : public binary_operator_base
 {
-	valty operator()() override
+	result operator()() override
 	{
 		Op op;
-		return op((*lhs)(), (*rhs)());
+		result l = (*lhs)();
+		result r = (*rhs)();
+		if (!(l.second && r.second))
+		{
+			return {0, false};
+		}
+		return {op(l.first, r.first), true};
 	}
 	int precedence() override
 	{
@@ -354,10 +382,11 @@ struct binary_operator : public binary_operator_base
 	 * Constructor.  Takes the name of the operator as an argument, for
 	 * debugging.  Only stores it in debug mode.
 	 */
-	binary_operator(const char *) {}
+	binary_operator(source_location l, const char *) : expression(l) {}
 #else
 	const char *opName;
-	binary_operator(const char *o) : opName(o) {}
+	binary_operator(source_location l, const char *o) :
+		binary_operator_base(l), opName(o) {}
 	void dump_impl() override
 	{
 		lhs->dump();
@@ -385,9 +414,16 @@ class ternary_conditional_operator : public expression
 	 * The expression that this evaluates to if the condition is false.
 	 */
 	expression_ptr rhs;
-	valty operator()() override
+	result operator()() override
 	{
-		return (*cond)() ? (*lhs)() : (*rhs)();
+		result c = (*cond)();
+		result l = (*lhs)();
+		result r = (*rhs)();
+		if (!(l.second && r.second && c.second))
+		{
+			return {0, false};
+		}
+		return c.first ? l : r;
 	}
 	int precedence() override
 	{
@@ -407,10 +443,12 @@ class ternary_conditional_operator : public expression
 	}
 #endif
 	public:
-	ternary_conditional_operator(expression_ptr c,
+	ternary_conditional_operator(source_location sl,
+	                             expression_ptr c,
 	                             expression_ptr l,
 	                             expression_ptr r) :
-		cond(std::move(c)), lhs(std::move(l)), rhs(std::move(r)) {}
+		expression(sl), cond(std::move(c)), lhs(std::move(l)),
+		rhs(std::move(r)) {}
 };
 
 template<typename T>
@@ -447,6 +485,22 @@ struct bit_not
 	}
 };
 
+struct divide : public binary_operator<5, std::divides<valty>>
+{
+	using binary_operator<5, std::divides<valty>>::binary_operator;
+	result operator()() override
+	{
+		result r = (*rhs)();
+		fprintf(stderr, "Divide!\n");
+		if (r.second && (r.first == 0))
+		{
+			loc.report_error("Division by zero");
+			return {0, false};
+		}
+		return binary_operator<5, std::divides<valty>>::operator()();
+	}
+};
+
 } // anonymous namespace
 
 
@@ -455,24 +509,25 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 	next_token();
 	binary_operator_base *expr = nullptr;
 	char op = ((*this)[0]);
+	source_location l = location();
 	switch (op)
 	{
 		default:
 			return lhs;
 		case '+':
-			expr = new binary_operator<6, std::plus<valty>>("+");
+			expr = new binary_operator<6, std::plus<valty>>(l, "+");
 			break;
 		case '-':
-			expr = new binary_operator<6, std::minus<valty>>("-");
+			expr = new binary_operator<6, std::minus<valty>>(l, "-");
 			break;
 		case '%':
-			expr = new binary_operator<5, std::modulus<valty>>("%");
+			expr = new binary_operator<5, std::modulus<valty>>(l, "%");
 			break;
 		case '*':
-			expr = new binary_operator<5, std::multiplies<valty>>("*");
+			expr = new binary_operator<5, std::multiplies<valty>>(l, "*");
 			break;
 		case '/':
-			expr = new binary_operator<5, std::divides<valty>>("/");
+			expr = new divide(l, "/");
 			break;
 		case '<':
 			cursor++;
@@ -485,13 +540,13 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				case '(':
 				case '0'...'9':
 					cursor--;
-					expr = new binary_operator<8, std::less<valty>>("<");
+					expr = new binary_operator<8, std::less<valty>>(l, "<");
 					break;
 				case '=':
-					expr = new binary_operator<8, std::less_equal<valty>>("<=");
+					expr = new binary_operator<8, std::less_equal<valty>>(l, "<=");
 					break;
 				case '<':
-					expr = new binary_operator<7, lshift<valty>>("<<");
+					expr = new binary_operator<7, lshift<valty>>(l, "<<");
 					break;
 			}
 			break;
@@ -506,13 +561,13 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				case ' ':
 				case '0'...'9':
 					cursor--;
-					expr = new binary_operator<8, std::greater<valty>>(">");
+					expr = new binary_operator<8, std::greater<valty>>(l, ">");
 					break;
 				case '=':
-					expr = new binary_operator<8, std::greater_equal<valty>>(">=");
+					expr = new binary_operator<8, std::greater_equal<valty>>(l, ">=");
 					break;
 				case '>':
-					expr = new binary_operator<7, rshift<valty>>(">>");
+					expr = new binary_operator<7, rshift<valty>>(l, ">>");
 					break;
 					return lhs;
 			}
@@ -524,7 +579,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				return nullptr;
 			}
 			consume('=');
-			expr = new binary_operator<9, std::equal_to<valty>>("==");
+			expr = new binary_operator<9, std::equal_to<valty>>(l, "==");
 			break;
 		case '!':
 			if ((*this)[1] != '=')
@@ -533,26 +588,26 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				return nullptr;
 			}
 			cursor++;
-			expr = new binary_operator<9, std::not_equal_to<valty>>("!=");
+			expr = new binary_operator<9, std::not_equal_to<valty>>(l, "!=");
 			break;
 		case '&':
 			if ((*this)[1] == '&')
 			{
-				expr = new binary_operator<13, std::logical_and<valty>>("&&");
+				expr = new binary_operator<13, std::logical_and<valty>>(l, "&&");
 			}
 			else
 			{
-				expr = new binary_operator<10, std::bit_and<valty>>("&");
+				expr = new binary_operator<10, std::bit_and<valty>>(l, "&");
 			}
 			break;
 		case '|':
 			if ((*this)[1] == '|')
 			{
-				expr = new binary_operator<12, std::logical_or<valty>>("||");
+				expr = new binary_operator<12, std::logical_or<valty>>(l, "||");
 			}
 			else
 			{
-				expr = new binary_operator<14, std::bit_or<valty>>("|");
+				expr = new binary_operator<14, std::bit_or<valty>>(l, "|");
 			}
 			break;
 		case '?':
@@ -571,7 +626,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				parse_error("Expected false condition for ternary operator");
 				return nullptr;
 			}
-			return expression_ptr(new ternary_conditional_operator(std::move(lhs),
+			return expression_ptr(new ternary_conditional_operator(l, std::move(lhs),
 						std::move(true_case), std::move(false_case)));
 		}
 	}
@@ -606,6 +661,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 	next_token();
 	unsigned long long leftVal;
 	expression_ptr lhs;
+	source_location l = location();
 	switch ((*this)[0])
 	{
 		case '0'...'9':
@@ -613,7 +669,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new terminal_expr(leftVal));
+			lhs.reset(new terminal_expr(l, leftVal));
 			break;
 		case '(':
 		{
@@ -623,7 +679,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new paren_expression(std::move(subexpr)));
+			lhs.reset(new paren_expression(l, std::move(subexpr)));
 			if (!consume(')'))
 			{
 				return nullptr;
@@ -642,7 +698,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new unary_operator<'+', unary_plus<valty>>(std::move(subexpr)));
+			lhs.reset(new unary_operator<'+', unary_plus<valty>>(l, std::move(subexpr)));
 			break;
 		}
 		case '-':
@@ -653,7 +709,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new unary_operator<'-', std::negate<valty>>(std::move(subexpr)));
+			lhs.reset(new unary_operator<'-', std::negate<valty>>(l, std::move(subexpr)));
 			break;
 		}
 		case '!':
@@ -664,7 +720,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new unary_operator<'!', std::logical_not<valty>>(std::move(subexpr)));
+			lhs.reset(new unary_operator<'!', std::logical_not<valty>>(l, std::move(subexpr)));
 			break;
 		}
 		case '~':
@@ -675,7 +731,7 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new unary_operator<'~', bit_not<valty>>(std::move(subexpr)));
+			lhs.reset(new unary_operator<'~', bit_not<valty>>(l, std::move(subexpr)));
 			break;
 		}
 	}
@@ -698,8 +754,13 @@ input_buffer::consume_integer_expression(unsigned long long &outInt)
 			{
 				return false;
 			}
-			outInt = (*e)();
-			return true;
+			auto r = (*e)();
+			if (r.second)
+			{
+				outInt = r.first;
+				return true;
+			}
+			return false;
 		}
 		case '0'...'9':
 			return consume_integer(outInt);
@@ -766,10 +827,19 @@ input_buffer::next_token()
 void
 input_buffer::parse_error(const char *msg)
 {
+	parse_error(msg, cursor);
+}
+void
+input_buffer::parse_error(const char *msg, int loc)
+{
+	if (loc > size)
+	{
+		return;
+	}
 	int line_count = 1;
 	int line_start = 0;
-	int line_end = cursor;
-	for (int i=cursor ; i>0 ; --i)
+	int line_end = loc;
+	for (int i=loc ; i>0 ; --i)
 	{
 		if (buffer[i] == '\n')
 		{
@@ -780,7 +850,7 @@ input_buffer::parse_error(const char *msg)
 			}
 		}
 	}
-	for (int i=cursor+1 ; i<size ; ++i)
+	for (int i=loc+1 ; i<size ; ++i)
 	{
 		if (buffer[i] == '\n')
 		{
@@ -791,7 +861,7 @@ input_buffer::parse_error(const char *msg)
 	fprintf(stderr, "Error on line %d: %s\n", line_count, msg);
 	fwrite(&buffer[line_start], line_end-line_start, 1, stderr);
 	putc('\n', stderr);
-	for (int i=0 ; i<(cursor-line_start) ; ++i)
+	for (int i=0 ; i<(loc-line_start) ; ++i)
 	{
 		char c = (buffer[i+line_start] == '\t') ? '\t' : ' ';
 		putc(c, stderr);
