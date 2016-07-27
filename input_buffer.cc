@@ -53,6 +53,16 @@
 
 namespace dtc
 {
+
+void
+input_buffer::skip_to(char c)
+{
+	while ((cursor < size) && (buffer[cursor] != c))
+	{
+		cursor++;
+	}
+}
+
 void
 input_buffer::skip_spaces()
 {
@@ -71,6 +81,12 @@ input_buffer::skip_spaces()
 		{
 			c = buffer[cursor];
 		}
+	}
+	// Skip C preprocessor leftovers
+	if ((c == '#') && ((cursor == 0) || (buffer[cursor-1] == '\n')))
+	{
+		skip_to('\n');
+		skip_spaces();
 	}
 }
 

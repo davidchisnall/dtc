@@ -97,6 +97,11 @@ class input_buffer
 	void skip_spaces();
 	public:
 	/**
+	 * Skips all characters in the input until the specified character is
+	 * encountered.
+	 */
+	void skip_to(char);
+	/**
 	 * Return whether all input has been consumed.
 	 */
 	bool finished() { return cursor >= size; }
