@@ -1314,9 +1314,9 @@ device_tree::parse_file(input_buffer &input,
 	{
 		input.parse_error("Expected /dts-v1/; version string");
 	}
-	while(parse_include(input, dir, roots, depfile, read_header)) {}
+	while (parse_include(input, dir, roots, depfile, read_header)) {}
 	// Read any memory reservations
-	while(input.consume("/memreserve/"))
+	while (input.consume("/memreserve/"))
 	{
 		unsigned long long start, len;
 		input.next_token();
@@ -1332,7 +1332,7 @@ device_tree::parse_file(input_buffer &input,
 		reservations.push_back(reservation(start, len));
 	}
 	input.next_token();
-	while(parse_include(input, dir, roots, depfile, read_header)) {}
+	while (parse_include(input, dir, roots, depfile, read_header)) {}
 	while (valid && !input.finished())
 	{
 		node_ptr n;
@@ -1361,7 +1361,7 @@ device_tree::parse_file(input_buffer &input,
 			valid = false;
 		}
 		input.next_token();
-		while(parse_include(input, dir, roots, depfile, read_header)) {}
+		while (parse_include(input, dir, roots, depfile, read_header)) {}
 	}
 }
 
