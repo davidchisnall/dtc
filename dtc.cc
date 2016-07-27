@@ -307,7 +307,7 @@ main(int argc, char **argv)
 	}
 	if (!(tree.is_valid() || keep_going))
 	{
-		fprintf(stderr, "Failed to parse tree.  Unhappy face!\n");
+		fprintf(stderr, "Failed to parse tree.\n");
 		return EXIT_FAILURE;
 	}
 	clock_t c2 = clock();
