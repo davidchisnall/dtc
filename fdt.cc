@@ -258,6 +258,7 @@ property::parse_string(input_buffer &input)
 			break;
 		}
 		isEscaped = (c == '\\');
+		bytes.push_back(c);
 		++input;
 	}
 	v.string_data = string(bytes.begin(), bytes.end());
