@@ -58,7 +58,7 @@ class checker
 	/**
 	 * The name of the checker.  This is used for printing error messages
 	 * and for enabling / disabling specific checkers from the command
-	 * line. 
+	 * line.
 	 */
 	const char *checker_name;
 	/**
@@ -122,7 +122,7 @@ class property_checker : public checker
 	public:
 	/**
 	 * Implementation of the generic property-checking method that checks
-	 * for a property with the name specified in the constructor 
+	 * for a property with the name specified in the constructor.
 	 */
 	virtual bool check_property(device_tree *tree, const node_ptr &n, property_ptr p);
 	/**
@@ -215,7 +215,7 @@ struct property_type_checker <property_value::PHANDLE> : public property_checker
 		property_checker(name, property_name) {}
 	virtual bool check(device_tree *tree, const node_ptr &, property_ptr p)
 	{
-		return (p->begin() + 1 == p->end()) && 
+		return (p->begin() + 1 == p->end()) &&
 			(tree->referenced_node(*p->begin()) != 0);
 	}
 };
@@ -296,7 +296,7 @@ class check_manager
 	 */
 	bool disable_checker(const std::string &name);
 	/**
-	 * Enables the named checker.  
+	 * Enables the named checker.
 	 */
 	bool enable_checker(const std::string &name);
 };
