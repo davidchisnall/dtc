@@ -30,169 +30,25 @@
  * $FreeBSD$
  */
 
-#include "string.hh"
+#include <string>
 #include <ctype.h>
 #include <stdio.h>
 
-namespace
-{
-/**
- * The source files are ASCII, so we provide a non-locale-aware version of
- * isalpha.  This is a class so that it can be used with a template function
- * for parsing strings.
- */
-struct is_alpha 
-{
-	static inline bool check(const char c)
-	{
-		return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') &&
-			(c <= 'Z'));
-	}
-};
-/**
- * Check whether a character is in the set allowed for node names.  This is a
- * class so that it can be used with a template function for parsing strings.
- */
-struct is_node_name_character
-{
-	static inline bool check(const char c)
-	{
-		switch(c)
-		{
-			default:
-				return false;
-			case 'a'...'z': case 'A'...'Z': case '0'...'9':
-			case ',': case '.': case '+': case '-':
-			case '_':
-				return true;
-		}
-	}
-};
-/**
- * Check whether a character is in the set allowed for property names.  This is
- * a class so that it can be used with a template function for parsing strings.
- */
-struct is_property_name_character
-{
-	static inline bool check(const char c)
-	{
-		switch(c)
-		{
-			default:
-				return false;
-			case 'a'...'z': case 'A'...'Z': case '0'...'9':
-			case ',': case '.': case '+': case '-':
-			case '_': case '#':
-				return true;
-		}
-	}
-};
-
-}
+#include "util.hh"
 
 namespace dtc
 {
 
-template<class T> string
-string::parse(input_buffer &s)
-{
-	const char *start = s;
-	int l=0;
-	while (T::check(*s)) { l++; ++s; }
-	return string(start, l);
-}
-
-string::string(input_buffer &s) : start((const char*)s), length(0)
-{
-	while(s[length] != '\0')
-	{
-		length++;
-	}
-}
-
-string
-string::parse_node_name(input_buffer &s)
-{
-	return parse<is_node_name_character>(s);
-}
-
-string
-string::parse_property_name(input_buffer &s)
-{
-	return parse<is_property_name_character>(s);
-}
-string
-string::parse_node_or_property_name(input_buffer &s, bool &is_property)
-{
-	if (is_property)
-	{
-		return parse_property_name(s);
-	}
-	const char *start = s;
-	int l=0;
-	while (is_node_name_character::check(*s))
-	{
-		l++;
-		++s;
-	}
-	while (is_property_name_character::check(*s))
-	{
-		l++;
-		++s;
-		is_property = true;
-	}
-	return string(start, l);
-}
-
-bool
-string::operator==(const string& other) const
-{
-	return (length == other.length) &&
-	       (memcmp(start, other.start, length) == 0);
-}
-
-bool
-string::operator==(const std::string &other) const
-{
-	if ((size_t)length != other.size())
-	{
-		return false;
-	}
-	auto i=begin();
-	for (auto ii : other)
-	{
-		if (*i != ii)
-		{
-			return false;
-		}
-		++i;
-	}
-	return true;
-}
-
-bool
-string::operator==(const char *other) const
-{
-	return strncmp(other, start, length) == 0;
-}
-
-bool
-string::operator<(const string& other) const
-{
-	if (length < other.length) { return true; }
-	if (length > other.length) { return false; }
-	return memcmp(start, other.start, length) < 0;
-}
-
 void
-string::push_to_buffer(byte_buffer &buffer, bool escapes)
+push_string(byte_buffer &buffer, const std::string &s, bool escapes)
 {
-	for (int i=0 ; i<length ; ++i)
+	size_t length = s.size();
+	for (size_t i=0 ; i<length ; ++i)
 	{
-		uint8_t c = start[i];
+		uint8_t c = s[i];
 		if (escapes && c == '\\' && i+1 < length)
 		{
-			c = start[++i];
+			c = s[++i];
 			switch (c)
 			{
 				// For now, we just ignore invalid escape sequences.
@@ -225,15 +81,15 @@ string::push_to_buffer(byte_buffer &buffer, bool escapes)
 				case '0'...'7':
 				{
 					int v = digittoint(c);
-					if (i+1 < length && start[i+1] <= '7' && start[i+1] >= '0')
+					if (i+1 < length && s[i+1] <= '7' && s[i+1] >= '0')
 					{
 						v <<= 3;
-						v |= digittoint(start[i+1]);
+						v |= digittoint(s[i+1]);
 						i++;
-						if (i+1 < length && start[i+1] <= '7' && start[i+1] >= '0')
+						if (i+1 < length && s[i+1] <= '7' && s[i+1] >= '0')
 						{
 							v <<= 3;
-							v |= digittoint(start[i+1]);
+							v |= digittoint(s[i+1]);
 						}
 					}
 					c = (uint8_t)v;
@@ -246,11 +102,11 @@ string::push_to_buffer(byte_buffer &buffer, bool escapes)
 					{
 						break;
 					}
-					int v = digittoint(start[i]);
-					if (i+1 < length && ishexdigit(start[i+1]))
+					int v = digittoint(s[i]);
+					if (i+1 < length && ishexdigit(s[i+1]))
 					{
 						v <<= 4;
-						v |= digittoint(start[++i]);
+						v |= digittoint(s[++i]);
 					}
 					c = (uint8_t)v;
 					break;
@@ -260,18 +116,5 @@ string::push_to_buffer(byte_buffer &buffer, bool escapes)
 		buffer.push_back(c);
 	}
 }
-
-void
-string::print(FILE *file)
-{
-	fwrite(start, length, 1, file);
-}
-
-void
-string::dump()
-{
-	print(stderr);
-}
-
 } // namespace dtc
 

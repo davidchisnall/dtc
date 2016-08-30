@@ -39,7 +39,7 @@
 #include <functional>
 
 #include "util.hh"
-#include "string.hh"
+#include "input_buffer.hh"
 
 namespace dtc
 {
@@ -65,7 +65,7 @@ typedef std::unique_ptr<node> node_ptr;
 /**
  * Map from macros to property pointers.
  */
-typedef std::unordered_map<string, property_ptr> define_map;
+typedef std::unordered_map<std::string, property_ptr> define_map;
 /**
  * Properties may contain a number of different value, each with a different
  * label.  This class encapsulates a single value.
@@ -75,12 +75,12 @@ struct property_value
 	/**
 	 * The label for this data.  This is usually empty.
 	 */
-	string label;
+	std::string label;
 	/**
 	 * If this value is a string, or something resolved from a string (a
 	 * reference) then this contains the source string.
 	 */
-	string string_data;
+	std::string string_data;
 	/**
 	 * The data that should be written to the final output.
 	 */
@@ -186,7 +186,7 @@ struct property_value
 	/**
 	 * Default constructor, specifying the label of the value.
 	 */
-	property_value(string l=string()) : label(l), type(UNKNOWN) {}
+	property_value(std::string l=std::string()) : label(l), type(UNKNOWN) {}
 	/**
 	 * Writes the data for this value into an output buffer.
 	 */
@@ -250,11 +250,11 @@ class property
 	/**
 	 * The name of this property.
 	 */
-	string key;
+	std::string key;
 	/**
 	 * An optional label.
 	 */
-	string label;
+	std::string label;
 	/**
 	 * The values in this property.
 	 */
@@ -300,16 +300,16 @@ class property
 	 * Parses a new property from the input buffer.  
 	 */
 	property(input_buffer &input,
-	         string k,
-	         string l,
+	         std::string &&k,
+	         std::string &&l,
 	         bool terminated,
 	         define_map *defines);
 	public:
 	/**
 	 * Creates an empty property.
 	 */
-	property(string k, string l=string()) : key(k), label(l), valid(true)
-	{}
+	property(std::string &&k, std::string &&l=std::string())
+		: key(k), label(l), valid(true) {}
 	/**
 	 * Copy constructor.
 	 */
@@ -328,8 +328,8 @@ class property
 	 * error, this will return 0.
 	 */
 	static property_ptr parse(input_buffer &input,
-	                          string key,
-	                          string label=string(),
+	                          std::string &&key,
+	                          std::string &&label=std::string(),
 	                          bool semicolonTerminated=true,
 	                          define_map *defines=0);
 	/**
@@ -360,7 +360,7 @@ class property
 	/**
 	 * Returns the key for this property.
 	 */
-	inline string get_key()
+	inline std::string get_key()
 	{
 		return key;
 	}
@@ -389,16 +389,16 @@ class node
 	 * The label for this node, if any.  Node labels are used as the
 	 * targets for cross references.
 	 */
-	string label;
+	std::string label;
 	/**
 	 * The name of the node.
 	 */
-	string name;
+	std::string name;
 	/**
 	 * The unit address of the node, which is optionally written after the
 	 * name followed by an at symbol.
 	 */
-	string unit_address;
+	std::string unit_address;
 	/**
 	 * The type for the property vector.
 	 */
@@ -447,9 +447,9 @@ class node
 	 * Parses a name inside a node, writing the string passed as the last
 	 * argument as an error if it fails.  
 	 */
-	string parse_name(input_buffer &input,
-	                  bool &is_property,
-	                  const char *error);
+	std::string parse_name(input_buffer &input,
+	                       bool &is_property,
+	                       const char *error);
 	/**
 	 * Constructs a new node from two input buffers, pointing to the struct
 	 * and strings tables in the device tree blob, respectively.
@@ -461,7 +461,11 @@ class node
 	 * node.  The name, and optionally label and unit address, should have
 	 * already been parsed.
 	 */
-	node(input_buffer &input, string n, string l, string a, define_map*);
+	node(input_buffer &input,
+	     std::string &&n,
+	     std::string &&l,
+	     std::string &&a,
+	     define_map*);
 	/**
 	 * Comparison function for properties, used when sorting the properties
 	 * vector.  Orders the properties based on their names.
@@ -536,9 +540,9 @@ class node
 	 * have been parsed.
 	 */
 	static node_ptr parse(input_buffer &input,
-	                      string name,
-	                      string label=string(),
-	                      string address=string(),
+	                      std::string &&name,
+	                      std::string &&label=std::string(),
+	                      std::string &&address=std::string(),
 	                      define_map *defines=0);
 	/**
 	 * Factory method for constructing a new node.  Attempts to parse a
@@ -552,7 +556,7 @@ class node
 	 * Returns a property corresponding to the specified key, or 0 if this
 	 * node does not contain a property of that name.
 	 */
-	property_ptr get_property(string key);
+	property_ptr get_property(const std::string &key);
 	/**
 	 * Adds a new property to this node.
 	 */
@@ -596,7 +600,7 @@ class device_tree
 	 * Type used for node paths.  A node path is sequence of names and unit
 	 * addresses.
 	 */
-	typedef std::vector<std::pair<string,string> > node_path;
+	typedef std::vector<std::pair<std::string,std::string> > node_path;
 	/**
 	 * Name that we should use for phandle nodes.
 	 */
@@ -638,13 +642,13 @@ class device_tree
 	 * Mapping from names to nodes.  Only unambiguous names are recorded,
 	 * duplicate names are stored as (node*)-1.
 	 */
-	std::unordered_map<string, node*> node_names;
+	std::unordered_map<std::string, node*> node_names;
 	/**
 	 * A map from labels to node paths.  When resolving cross references,
 	 * we look up referenced nodes in this and replace the cross reference
 	 * with the full path to its target.
 	 */
-	std::unordered_map<string, node_path> node_paths;
+	std::unordered_map<std::string, node_path> node_paths;
 	/**
 	 * A collection of property values that are references to other nodes.
 	 * These should be expanded to the full path of their targets.
@@ -659,7 +663,7 @@ class device_tree
 	/**
 	 * The names of nodes that target phandles.
 	 */
-	std::unordered_set<string> phandle_targets;
+	std::unordered_set<std::string> phandle_targets;
 	/**
 	 * A collection of input buffers that we are using.  These input
 	 * buffers are the ones that own their memory, and so we must preserve

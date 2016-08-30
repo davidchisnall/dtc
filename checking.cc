@@ -33,7 +33,7 @@
 #include "checking.hh"
 #include <stdio.h>
 
-
+using std::string;
 
 namespace dtc
 {
@@ -126,11 +126,11 @@ checker::report_error(const char *errmsg)
 	for (auto &p : path)
 	{
 		putc('/', stderr);
-		p.first.dump();
+		puts(p.first.c_str());
 		if (!(p.second.empty()))
 		{
 			putc('@', stderr);
-			p.second.dump();
+			puts(p.second.c_str());
 		}
 	}
 	fprintf(stderr, " [-W%s]\n", checker_name);
@@ -167,7 +167,7 @@ property_size_checker::check(device_tree *, const node_ptr &, property_ptr p)
 
 template<property_value::value_type T>
 void
-check_manager::add_property_type_checker(const char *name, string prop)
+check_manager::add_property_type_checker(const char *name, const string &prop)
 {
 	checkers.insert(std::make_pair(string(name),
 		new property_type_checker<T>(name, prop)));
@@ -175,7 +175,7 @@ check_manager::add_property_type_checker(const char *name, string prop)
 
 void
 check_manager::add_property_size_checker(const char *name,
-                                         string prop,
+                                         const string &prop,
                                          uint32_t size)
 {
 	checkers.insert(std::make_pair(string(name),
@@ -225,7 +225,7 @@ check_manager::run_checks(device_tree *tree, bool keep_going)
 }
 
 bool
-check_manager::disable_checker(string name)
+check_manager::disable_checker(const string &name)
 {
 	auto checker = checkers.find(name);
 	if (checker != checkers.end())
@@ -239,7 +239,7 @@ check_manager::disable_checker(string name)
 }
 
 bool
-check_manager::enable_checker(string name)
+check_manager::enable_checker(const string &name)
 {
 	auto checker = disabled_checkers.find(name);
 	if (checker != disabled_checkers.end())

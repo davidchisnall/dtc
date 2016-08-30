@@ -68,6 +68,8 @@ inline void push_big_endian(byte_buffer &v, T val)
 	}
 }
 
+void push_string(byte_buffer &v, const std::string &s, bool escapes=false);
+
 /**
  * Simple inline non-locale-aware check that this is a valid ASCII
  * digit.

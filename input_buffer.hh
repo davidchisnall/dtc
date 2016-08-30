@@ -193,16 +193,6 @@ class input_buffer
 		return *this;
 	}
 	/**
-	 * Cast to char* operator.  Returns a pointer into the buffer that can
-	 * be used for constructing strings.
-	 */
-	inline operator const char*()
-	{
-		if (cursor >= size) { return 0; }
-		if (cursor < 0) { return 0; }
-		return &buffer[cursor];
-	}
-	/**
 	 * Consumes a character.  Moves the cursor one character forward if the
 	 * next character matches the argument, returning true.  If the current
 	 * character does not match the argument, returns false.
@@ -273,6 +263,30 @@ class input_buffer
 	 * cursor in place.
 	 */
 	bool consume_hex_byte(uint8_t &outByte);
+	/**
+	 * Returns the longest string in the input buffer starting at the
+	 * current cursor and composed entirely of characters that are valid in
+	 * node names.
+	*/
+	std::string parse_node_name();
+	/**
+	 * Returns the longest string in the input buffer starting at the
+	 * current cursor and composed entirely of characters that are valid in
+	 * property names.
+	 */
+	std::string parse_property_name();
+	/**
+	 * Parses either a node or a property name.  If is_property is true on
+	 * entry, then only property names are parsed.  If it is false, then it
+	 * will be set, on return, to indicate whether the parsed name is only
+	 * valid as a property.
+	 */
+	std::string parse_node_or_property_name(bool &is_property);
+	/**
+	 * Parses up to a specified character and returns the intervening
+	 * characters as a string.
+	 */
+	std::string parse_to(char);
 	/**
 	 * Advances the cursor to the start of the next token, skipping
 	 * comments and whitespace.  If the cursor already points to the start

@@ -51,6 +51,8 @@
 #define MAP_PREFAULT_READ 0
 #endif
 
+using std::string;
+
 namespace dtc
 {
 
@@ -912,6 +914,115 @@ stream_input_buffer::stream_input_buffer() : input_buffer(0, 0)
 	}
 	buffer = b.data();
 	size = b.size();
+}
+
+namespace
+{
+/**
+ * The source files are ASCII, so we provide a non-locale-aware version of
+ * isalpha.  This is a class so that it can be used with a template function
+ * for parsing strings.
+ */
+struct is_alpha
+{
+	static inline bool check(const char c)
+	{
+		return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') &&
+			(c <= 'Z'));
+	}
+};
+/**
+ * Check whether a character is in the set allowed for node names.  This is a
+ * class so that it can be used with a template function for parsing strings.
+ */
+struct is_node_name_character
+{
+	static inline bool check(const char c)
+	{
+		switch(c)
+		{
+			default:
+				return false;
+			case 'a'...'z': case 'A'...'Z': case '0'...'9':
+			case ',': case '.': case '+': case '-':
+			case '_':
+				return true;
+		}
+	}
+};
+/**
+ * Check whether a character is in the set allowed for property names.  This is
+ * a class so that it can be used with a template function for parsing strings.
+ */
+struct is_property_name_character
+{
+	static inline bool check(const char c)
+	{
+		switch(c)
+		{
+			default:
+				return false;
+			case 'a'...'z': case 'A'...'Z': case '0'...'9':
+			case ',': case '.': case '+': case '-':
+			case '_': case '#':
+				return true;
+		}
+	}
+};
+
+template<class T>
+string parse(input_buffer &s)
+{
+	std::vector<char> bytes;
+	for (char c=s[0] ; T::check(c) ; c=(++s)[0])
+	{
+		bytes.push_back(c);
+	}
+	return string(bytes.begin(), bytes.end());
+}
+
+}
+
+string
+input_buffer::parse_node_name()
+{
+	return parse<is_node_name_character>(*this);
+}
+
+string
+input_buffer::parse_property_name()
+{
+	return parse<is_property_name_character>(*this);
+}
+
+string
+input_buffer::parse_node_or_property_name(bool &is_property)
+{
+	if (is_property)
+	{
+		return parse_property_name();
+	}
+	std::vector<char> bytes;
+	for (char c=(*this)[0] ; is_node_name_character::check(c) ; c=(++(*this))[0])
+	{
+		bytes.push_back(c);
+	}
+	for (char c=(*this)[0] ; is_property_name_character::check(c) ; c=(++(*this))[0])
+	{
+		bytes.push_back(c);
+		is_property = true;
+	}
+	return string(bytes.begin(), bytes.end());
+}
+
+string input_buffer::parse_to(char stop)
+{
+	std::vector<char> bytes;
+	for (char c=(*this)[0] ; c != stop ; c=(++(*this))[0])
+	{
+		bytes.push_back(c);
+	}
+	return string(bytes.begin(), bytes.end());
 }
 
 } // namespace dtc

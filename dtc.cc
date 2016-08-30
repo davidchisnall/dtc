@@ -44,6 +44,7 @@
 #include "checking.hh"
 
 using namespace dtc;
+using std::string;
 
 /**
  * The current major version of the tool.
@@ -115,12 +116,12 @@ main(int argc, char **argv)
 			return EXIT_SUCCESS;
 		case 'I':
 		{
-			string arg = string(optarg);
-			if (arg == string("dtb"))
+			string arg(optarg);
+			if (arg == "dtb")
 			{
 				read_fn = &device_tree::parse_dtb;
 			}
-			else if (arg == string("dts"))
+			else if (arg == "dts")
 			{
 				read_fn = &device_tree::parse_dts;
 			}
@@ -133,16 +134,16 @@ main(int argc, char **argv)
 		}
 		case 'O':
 		{
-			string arg = string(optarg);
-			if (arg == string("dtb"))
+			string arg(optarg);
+			if (arg == "dtb")
 			{
 				write_fn = &device_tree::write_binary;
 			}
-			else if (arg == string("asm"))
+			else if (arg == "asm")
 			{
 				write_fn = &device_tree::write_asm;
 			}
-			else if (arg == string("dts"))
+			else if (arg == "dts")
 			{
 				write_fn = &device_tree::write_dts;
 			}
@@ -168,7 +169,7 @@ main(int argc, char **argv)
 			debug_mode = true;
 			break;
 		case 'V':
-			if (string(optarg) != string("17"))
+			if (string(optarg) != "17")
 			{
 				fprintf(stderr, "Unknown output format version: %s\n", optarg);
 				return EXIT_FAILURE;
@@ -180,7 +181,7 @@ main(int argc, char **argv)
 			{
 				fclose(depfile);
 			}
-			if (string(optarg) == string("-"))
+			if (string(optarg) == "-")
 			{
 				depfile = stdout;
 			}
@@ -197,16 +198,16 @@ main(int argc, char **argv)
 		}
 		case 'H':
 		{
-			string arg = string(optarg);
-			if (arg == string("both"))
+			string arg(optarg);
+			if (arg == "both")
 			{
 				tree.set_phandle_format(device_tree::BOTH);
 			}
-			else if (arg == string("epapr"))
+			else if (arg == "epapr")
 			{
 				tree.set_phandle_format(device_tree::EPAPR);
 			}
-			else if (arg == string("linux"))
+			else if (arg == "linux")
 			{
 				tree.set_phandle_format(device_tree::LINUX);
 			}
@@ -229,7 +230,7 @@ main(int argc, char **argv)
 		case 'W':
 		case 'E':
 		{
-			string arg = string(optarg);
+			string arg(optarg);
 			if ((arg.size() > 3) && (strncmp(optarg, "no-", 3) == 0))
 			{
 				arg = string(optarg+3);
