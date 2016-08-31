@@ -489,14 +489,23 @@ class text_input_buffer
 		 */
 		int cursor;
 		source_location(text_input_buffer &buf)
-			: buffer(buf), b(buf.input_stack.top()), cursor(b->cursor) {}
+			: buffer(buf),
+			  b(buf.input_stack.empty() ? nullptr : buf.input_stack.top()),
+			  cursor(b ? b->cursor : 0) {}
 		public:
 		/**
 		 * Report an error at this location.
 		 */
 		void report_error(const char *msg)
 		{
-			buffer.parse_error(msg, *b, cursor);
+			if (b)
+			{
+				buffer.parse_error(msg, *b, cursor);
+			}
+			else
+			{
+				buffer.parse_error(msg);
+			}
 		}
 	};
 	/**

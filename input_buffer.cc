@@ -988,6 +988,11 @@ text_input_buffer::next_token()
 void
 text_input_buffer::parse_error(const char *msg)
 {
+	if (input_stack.empty())
+	{
+		fprintf(stderr, "Error: %s\n", msg);
+		return;
+	}
 	input_buffer &b = *input_stack.top();
 	parse_error(msg, b, b.cursor);
 }
