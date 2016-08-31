@@ -957,13 +957,13 @@ text_input_buffer::next_token()
 			++self;
 			do {
 				// Find the ending * of */
-				while ((*self != '\0') && (*self != '*'))
+				while ((*self != '\0') && (*self != '*') && !finished())
 				{
 					++self;
 				}
 				// Eat the *
 				++self;
-			} while ((*self != '\0') && (*self != '/'));
+			} while ((*self != '\0') && (*self != '/') && !finished());
 			// Eat the /
 			++self;
 		}
@@ -974,7 +974,7 @@ text_input_buffer::next_token()
 			++self;
 			++self;
 			// Find the ending of the line
-			while (*self != '\n')
+			while (*self != '\n' && !finished())
 			{
 				++self;
 			}
@@ -1164,6 +1164,10 @@ text_input_buffer::parse_to(char stop)
 	std::vector<char> bytes;
 	for (char c=*(*this) ; c != stop ; c=*(++(*this)))
 	{
+		if (finished())
+		{
+			break;
+		}
 		bytes.push_back(c);
 	}
 	return string(bytes.begin(), bytes.end());
