@@ -783,7 +783,7 @@ node::node(text_input_buffer &input,
 		bool is_property = false;
 		string child_name, child_address;
 		std::unordered_set<string> child_labels;
-		auto parse_delete = [&](const char *expected)
+		auto parse_delete = [&](const char *expected, bool at)
 		{
 			if (child_name == string())
 			{
@@ -792,6 +792,11 @@ node::node(text_input_buffer &input,
 				return;
 			}
 			input.next_token();
+			if (at && input.consume('@'))
+			{
+				child_name += '@';
+				child_name += parse_name(input, is_property, "Expected unit address");
+			}
 			if (!input.consume(';'))
 			{
 				input.parse_error("Expected semicolon");
@@ -804,7 +809,7 @@ node::node(text_input_buffer &input,
 		{
 			input.next_token();
 			child_name = input.parse_node_name();
-			parse_delete("Expected node name");
+			parse_delete("Expected node name", true);
 			if (valid)
 			{
 				deleted_children.insert(child_name);
@@ -815,7 +820,7 @@ node::node(text_input_buffer &input,
 		{
 			input.next_token();
 			child_name = input.parse_property_name();
-			parse_delete("Expected property name");
+			parse_delete("Expected property name", false);
 			if (valid)
 			{
 				deleted_props.insert(child_name);
@@ -1001,9 +1006,15 @@ node::merge_node(node_ptr other)
 	}
 	children.erase(std::remove_if(children.begin(), children.end(),
 			[&](const node_ptr &p) {
-				if (other->deleted_children.count(p->name) > 0)
+				string full_name = p->name;
+				if (p->unit_address != string())
 				{
-					other->deleted_children.erase(p->name);
+					full_name += '@';
+					full_name += p->unit_address;
+				}
+				if (other->deleted_children.count(full_name) > 0)
+				{
+					other->deleted_children.erase(full_name);
 					return true;
 				}
 				return false;
