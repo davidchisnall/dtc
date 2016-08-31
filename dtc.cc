@@ -42,6 +42,7 @@
 
 #include "fdt.hh"
 #include "checking.hh"
+#include "util.hh"
 
 using namespace dtc;
 using std::string;
@@ -59,7 +60,7 @@ int version_minor = 4;
  */
 int version_patch = 0;
 
-static void usage(const char* argv0)
+static void usage(const string &argv0)
 {
 	fprintf(stderr, "Usage:\n"
 		"\t%s\t[-fhsv] [-b boot_cpu_id] [-d dependency_file]"
@@ -68,7 +69,7 @@ static void usage(const char* argv0)
 			"[-O output_format]\n"
 		"\t\t[-o output_file] [-R entries] [-S bytes] [-p bytes]"
 			"[-V blob_version]\n"
-		"\t\t-W [no-]checker_name] input_file\n", basename((char*)argv0));
+		"\t\t-W [no-]checker_name] input_file\n", basename(argv0).c_str());
 }
 
 /**
@@ -91,9 +92,8 @@ main(int argc, char **argv)
 	const char *in_file = "-";
 	FILE *depfile = 0;
 	bool debug_mode = false;
-	void (device_tree::*write_fn)(int) = &device_tree::write_binary;
-	void (device_tree::*read_fn)(const char*, FILE*) =
-		&device_tree::parse_dts;
+	auto write_fn = &device_tree::write_binary;
+	auto read_fn = &device_tree::parse_dts;
 	uint32_t boot_cpu;
 	bool boot_cpu_specified = false;
 	bool keep_going = false;
