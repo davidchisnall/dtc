@@ -1145,27 +1145,52 @@ device_tree::resolve_cross_references()
 	{
 		string target_name = i->string_data;
 		node *target = nullptr;
+		string possible;
 		// If the node name is a path, then look it up by following the path,
 		// otherwise jump directly to the named node.
 		if (target_name[0] == '/')
 		{
+			std::string path;
 			target = root.get();
 			std::istringstream ss(target_name);
-			string node_name;
+			string path_element;
 			// Read the leading /
-			std::getline(ss, node_name, '/');
+			std::getline(ss, path_element, '/');
 			// Iterate over path elements
 			while (!ss.eof())
 			{
-				std::getline(ss, node_name, '/');
+				path += '/';
+				std::getline(ss, path_element, '/');
+				std::istringstream nss(path_element);
+				string node_name, node_address;
+				std::getline(nss, node_name, '@');
+				std::getline(nss, node_address, '@');
 				node *next = nullptr;
 				for (auto &c : target->child_nodes())
 				{
 					if (c->name == node_name)
 					{
-						next = c.get();
-						break;
+						if (c->unit_address == node_address)
+						{
+							next = c.get();
+							break;
+						}
+						else
+						{
+							possible = path + c->name;
+							if (c->unit_address != string())
+							{
+								possible += '@';
+								possible += c->unit_address;
+							}
+						}
 					}
+				}
+				path += node_name;
+				if (node_address != string())
+				{
+					path += '@';
+					path += node_address;
 				}
 				target = next;
 				if (target == nullptr)
@@ -1181,6 +1206,10 @@ device_tree::resolve_cross_references()
 		if (target == nullptr)
 		{
 			fprintf(stderr, "Failed to find node with label: %s\n", target_name.c_str());
+			if (possible != string())
+			{
+				fprintf(stderr, "Possible intended match: %s\n", possible.c_str());
+			}
 			valid = 0;
 			return;
 		}
