@@ -783,25 +783,43 @@ node::node(text_input_buffer &input,
 		bool is_property = false;
 		string child_name, child_address;
 		std::unordered_set<string> child_labels;
-		if (input.consume("/delete-node/"))
+		auto parse_delete = [&](const char *expected)
 		{
-			input.next_token();
-			child_name = input.parse_node_name();
 			if (child_name == string())
 			{
-				input.parse_error("Expected node name");
+				input.parse_error(expected);
 				valid = false;
-				continue;
+				return;
 			}
 			input.next_token();
 			if (!input.consume(';'))
 			{
 				input.parse_error("Expected semicolon");
 				valid = false;
-				continue;
+				return;
 			}
-			deleted_children.insert(child_name);
 			input.next_token();
+		};
+		if (input.consume("/delete-node/"))
+		{
+			input.next_token();
+			child_name = input.parse_node_name();
+			parse_delete("Expected node name");
+			if (valid)
+			{
+				deleted_children.insert(child_name);
+			}
+			continue;
+		}
+		if (input.consume("/delete-property/"))
+		{
+			input.next_token();
+			child_name = input.parse_property_name();
+			parse_delete("Expected property name");
+			if (valid)
+			{
+				deleted_props.insert(child_name);
+			}
 			continue;
 		}
 		child_name = parse_name(input, is_property,
@@ -971,16 +989,7 @@ node::merge_node(node_ptr other)
 		{
 			if (i->name == c->name && i->unit_address == c->unit_address)
 			{
-				if (other->deleted_children.count(c->name) > 0)
-				{
-					other->deleted_children.erase(c->name);
-					i = std::move(c);
-					continue;
-				}
-				else
-				{
-					i->merge_node(std::move(c));
-				}
+				i->merge_node(std::move(c));
 				found = true;
 				break;
 			}
@@ -999,11 +1008,15 @@ node::merge_node(node_ptr other)
 				}
 				return false;
 			}), children.end());
-	for (auto &d : other->deleted_children)
-	{
-		fprintf(stderr, "Error: Node %s attempting to delete nonexistent child %s\n",
-				name.c_str(), d.c_str());
-	}
+	props.erase(std::remove_if(props.begin(), props.end(),
+			[&](const property_ptr &p) {
+				if (other->deleted_props.count(p->get_key()) > 0)
+				{
+					other->deleted_props.erase(p->get_key());
+					return true;
+				}
+				return false;
+			}), props.end());
 }
 
 void

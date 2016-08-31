@@ -443,9 +443,13 @@ class node
 	 */
 	std::vector<node_ptr> children;
 	/**
-	 * List of children that should be deleted from the parent when merging.
+	 * Children that should be deleted from this node when merging.
 	 */
 	std::unordered_set<std::string> deleted_children;
+	/**
+	 * Properties that should be deleted from this node when merging.
+	 */
+	std::unordered_set<std::string> deleted_props;
 	/**
 	 * A flag indicating whether this node is valid.  This is set to false
 	 * if an error occurs during parsing.
@@ -524,6 +528,13 @@ class node
 	inline const std::unordered_set<std::string> &deleted_child_nodes()
 	{
 		return deleted_children;
+	}
+	/**
+	 * Accessor for the deleted properties
+	 */
+	inline const std::unordered_set<std::string> &deleted_properties()
+	{
+		return deleted_props;
 	}
 	/**
 	 * Returns a range suitable for use in a range-based for loop describing
