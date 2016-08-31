@@ -31,16 +31,20 @@
  */
 
 #include <string>
+#include <cstdio>
+#include <cstdlib>
 #include <ctype.h>
-#include <stdio.h>
+#include <libgen.h>
 
 #include "util.hh"
+
+using std::string;
 
 namespace dtc
 {
 
 void
-push_string(byte_buffer &buffer, const std::string &s, bool escapes)
+push_string(byte_buffer &buffer, const string &s, bool escapes)
 {
 	size_t length = s.size();
 	for (size_t i=0 ; i<length ; ++i)
@@ -115,6 +119,30 @@ push_string(byte_buffer &buffer, const std::string &s, bool escapes)
 		}
 		buffer.push_back(c);
 	}
+}
+
+std::string dirname(const string &s)
+{
+	if (s == string())
+	{
+		return string();
+	}
+	char *str = strdup(s.c_str());
+	string dn(::dirname(str));
+	free(str);
+	return dn;
+}
+
+std::string basename(const string &s)
+{
+	if (s == string())
+	{
+		return string();
+	}
+	char *str = strdup(s.c_str());
+	string bn(::basename(str));
+	free(str);
+	return bn;
 }
 } // namespace dtc
 

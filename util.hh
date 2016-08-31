@@ -89,6 +89,18 @@ inline bool ishexdigit(char c)
 		((c >= 'A') && (c <= 'Z'));
 }
 
+/**
+ * A wrapper around dirname(3) that handles inconsistencies relating to memory
+ * management between platforms and provides a std::string interface.
+ */
+std::string dirname(const std::string&);
+
+/**
+ * A wrapper around basename(3) that handles inconsistencies relating to memory
+ * management between platforms and provides a std::string interface.
+ */
+std::string basename(const std::string&);
+
 }// namespace dtc
 
 #endif // !_UTIL_HH_
