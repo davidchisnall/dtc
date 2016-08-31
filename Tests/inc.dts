@@ -1,0 +1,12 @@
+/dts-v1/;
+/include/ "inc1.dtsi"
+/include/ "inc2.dtsi"
+
+
+/ {
+  foo {
+    compatible = "simple-bus";
+    /include/ "bar.dtsi"
+  };
+};
+

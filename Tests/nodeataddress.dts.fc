@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+	bar {
+		foo@0 {
+		};
+	}
+	bar {
+		ref = <&{/bar/foo}>;
+	};
+	// CHECK: Failed to find node with label: /bar/foo
+	// CHECK: Possible intended match: /bar/foo@0
+};

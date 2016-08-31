@@ -1,0 +1,14 @@
+/dts-v1/;
+
+/ {
+    baz {
+        ref = <&bar0>;
+    };
+
+// CHECK: Label not unique: bar0.  References to this label will not be resolved.
+    bar0: bar {
+    };
+
+    bar0: bar {
+    };
+};

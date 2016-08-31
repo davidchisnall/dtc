@@ -1,0 +1,14 @@
+/dts-v1/;
+
+/  {
+
+	baz = <0x1>;
+	foo {
+
+		bar {
+
+			fish = <0x1>;
+			phandle = <0x1>;
+		};
+	};
+};

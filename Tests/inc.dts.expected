@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/  {
+
+	foo = "bar";
+	foo {
+
+		compatible = "simple-bus";
+		foo = "bar";
+	};
+};

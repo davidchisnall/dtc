@@ -1,0 +1,16 @@
+/dts-v1/;
+
+/  {
+
+	endpoint {
+
+		remote-endpoint = "foo";
+		phandle = <0x1>;
+	};
+	hdmi@0120000 {
+
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		remote-endpoint = <0x1>;
+	};
+};

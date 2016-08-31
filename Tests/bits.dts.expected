@@ -1,0 +1,15 @@
+/dts-v1/;
+
+/  {
+
+	foo8 = [7f 07 07];
+	lt = <0x1 0x1>;
+	le = <0x1 0x1>;
+	cond = <0x1 0x2>;
+	paren = <0x15>;
+	foo16 = [00 01 00 02 00 03];
+	foo32 = <0x1 0x2 0x3>;
+	foo64 = [01 fe 03];
+	foo64 = <0xffffffff 0xffffffff>;
+	foo322 = <0xffffffff>;
+};

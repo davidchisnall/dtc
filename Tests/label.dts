@@ -1,0 +1,16 @@
+/dts-v1/;
+/ {
+	hdmi_mux_2: endpoint {
+		remote-endpoint = "foo";
+	};
+	hdmi: hdmi@0120000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	}
+
+
+};
+
+&hdmi {
+	remote-endpoint = <&hdmi_mux_2>;
+};

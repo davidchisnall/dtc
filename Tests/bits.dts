@@ -1,0 +1,14 @@
+/dts-v1/;
+
+/ {
+	foo8 = /bits/ 8 <(1 + 2 * 3 + 4 * 5 * 6) (1+ 2*3) (3 * 2 + 1)>;
+	lt   = <(1<2) (1 < 2) > ;
+	le   = <(1<=2) (1 <= 2 )>;
+	cond = <(1 * 1 * 2 ? 1 : 2) (0 ? 1 : 2)>;
+	paren = <((1+2*3)*3)>;
+	foo16 = /bits/ 16 <(1<2) 2 3>;
+	foo32 = /bits/ 32 <1 2 3>;
+	foo64 = /bits/ 8 <(+1) (-2) 3>;
+	foo64 = /bits/ 64 <0xffffffffffffffff>;
+	foo322 = /bits/ 32 <0xffffffffffffffff>;
+};

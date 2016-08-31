@@ -1,0 +1,9 @@
+# 1 "src/arm64/al/alpine-v2-evp.dts"
+# 1 "<built-in>" 1
+# 1 "src/arm64/al/alpine-v2-evp.dts" 2
+# 35 "src/arm64/al/alpine-v2-evp.dts"
+# 1 "src/arm64/al/alpine-v2.dtsi" 1
+# 35 "src/arm64/al/alpine-v2.dtsi"
+/dts-v1/;
+
+/ {}

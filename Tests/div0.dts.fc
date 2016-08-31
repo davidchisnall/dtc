@@ -1,0 +1,10 @@
+/dts-v1/;
+
+/ {
+    foo = <0 (1/0)>;
+// CHECK: Error at 
+// CHECK: div0.dts.fc:4:15: Division by zero
+// CHECK:    foo = <0 (1/0)>;
+// CHECK:               ^
+
+};

@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+	foo0: foo {}
+
+	bar0: bar1: bar {
+	};
+	baz0: baz1: baz = "fish";
+};
+
+/ {
+	foo1: foo {}
+}
