@@ -700,7 +700,6 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 	if (structs[0] == '@')
 	{
 		++structs;
-		bytes.push_back(structs[0]);
 		while (structs[0] != '\0')
 		{
 			bytes.push_back(structs[0]);
