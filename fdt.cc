@@ -1620,7 +1620,10 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					{
 						fprintf(stderr, "Unable to merge node: %s\n", name.c_str());
 					}
-					existing->second->merge_node(std::move(node));
+					else
+					{
+						existing->second->merge_node(std::move(node));
+					}
 				}
 			}
 		}
