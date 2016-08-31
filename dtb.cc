@@ -158,6 +158,16 @@ asm_writer::write_comment(const string &name)
 }
 
 void
+asm_writer::write_string(const char *c)
+{
+	while (*c)
+	{
+		buffer.push_back((uint8_t)*(c++));
+	}
+}
+
+
+void
 asm_writer::write_string(const string &name)
 {
 	write_line("\t.string \"");

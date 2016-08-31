@@ -227,8 +227,12 @@ class asm_writer : public output_writer
 	uint32_t bytes_written;
 
 	/**
-	 * Writes a string directly to the output as-is.  This is mainly used
-	 * for writing directives.
+	 * Writes a string directly to the output as-is.  This is the function that
+	 * performs the real output.
+	 */
+	void write_string(const char *c);
+	/**
+	 * Write a string to the output.
 	 */
 	void write_string(const std::string &c);
 	/**
