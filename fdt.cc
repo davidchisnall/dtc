@@ -465,9 +465,9 @@ void property::parse_define(text_input_buffer &input, define_map *defines)
 
 property::property(text_input_buffer &input,
                    string &&k,
-                   string &&l,
+                   string_set &&l,
                    bool semicolonTerminated,
-                   define_map *defines) : key(k), label(l), valid(true)
+                   define_map *defines) : key(k), labels(l), valid(true)
 {
 	do {
 		input.next_token();
@@ -547,7 +547,7 @@ property::parse_dtb(input_buffer &structs, input_buffer &strings)
 }
 
 property_ptr
-property::parse(text_input_buffer &input, string &&key, string &&label,
+property::parse(text_input_buffer &input, string &&key, string_set &&label,
                 bool semicolonTerminated, define_map *defines)
 {
 	property_ptr p(new property(input,
@@ -613,9 +613,9 @@ property::write_dts(FILE *file, int indent)
 	{
 		putc('\t', file);
 	}
-	if (label != string())
+	for (auto &l : labels)
 	{
-		fputs(label.c_str(), file);
+		fputs(l.c_str(), file);
 		fputs(": ", file);
 	}
 	if (key != string())
@@ -763,8 +763,12 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 	return;
 }
 
-node::node(text_input_buffer &input, string &&n, string &&l, string &&a, define_map *defines) : 
-	label(l), name(n), unit_address(a), valid(true)
+node::node(text_input_buffer &input,
+           string &&n,
+           std::unordered_set<string> &&l,
+           string &&a,
+           define_map *defines)
+	: labels(l), name(n), unit_address(a), valid(true)
 {
 	if (!input.consume('{'))
 	{
@@ -776,15 +780,16 @@ node::node(text_input_buffer &input, string &&n, string &&l, string &&a, define_
 		// flag set if we find any characters that are only in
 		// the property name character set, not the node 
 		bool is_property = false;
-		string child_name, child_label, child_address;
+		string child_name, child_address;
+		std::unordered_set<string> child_labels;
 		child_name = parse_name(input, is_property,
 				"Expected property or node name");
-		if (input.consume(':'))
+		while (input.consume(':'))
 		{
 			// Node labels can contain any characters?  The
 			// spec doesn't say, so we guess so...
 			is_property = false;
-			child_label = child_name;
+			child_labels.insert(std::move(child_name));
 			child_name = parse_name(input, is_property, "Expected property or node name");
 		}
 		if (input.consume('@'))
@@ -800,7 +805,7 @@ node::node(text_input_buffer &input, string &&n, string &&l, string &&a, define_
 		if (input.consume('='))
 		{
 			property_ptr p = property::parse(input, std::move(child_name),
-					std::move(child_label), true, defines);
+					std::move(child_labels), true, defines);
 			if (p == 0)
 			{
 				valid = false;
@@ -813,7 +818,7 @@ node::node(text_input_buffer &input, string &&n, string &&l, string &&a, define_
 		else if (!is_property && *input == ('{'))
 		{
 			node_ptr child = node::parse(input, std::move(child_name),
-					std::move(child_label), std::move(child_address), defines);
+					std::move(child_labels), std::move(child_address), defines);
 			if (child)
 			{
 				children.push_back(std::move(child));
@@ -825,7 +830,7 @@ node::node(text_input_buffer &input, string &&n, string &&l, string &&a, define_
 		}
 		else if (input.consume(';'))
 		{
-			props.push_back(property_ptr(new property(std::move(child_name), std::move(child_label))));
+			props.push_back(property_ptr(new property(std::move(child_name), std::move(child_labels))));
 		}
 		else
 		{
@@ -867,7 +872,7 @@ node::sort()
 node_ptr
 node::parse(text_input_buffer &input,
             string &&name,
-            string &&label,
+            string_set &&label,
             string &&address,
             define_map *defines)
 {
@@ -910,9 +915,9 @@ node::get_property(const string &key)
 void
 node::merge_node(node_ptr other)
 {
-	if (!other->label.empty())
+	for (auto &l : other->labels)
 	{
-		label = other->label;
+		labels.insert(l);
 	}
 	// Note: this is an O(n*m) operation.  It might be sensible to
 	// optimise this if we find that there are nodes with very
@@ -988,10 +993,9 @@ node::write_dts(FILE *file, int indent)
 		putc('\t', file);
 	}
 #ifdef PRINT_LABELS
-	if (label != string())
+	for (auto &label : labels)
 	{
-		label.print(file);
-		fputs(": ", file);
+		fprintf(file, "%s: ", label.c_str());
 	}
 #endif
 	if (name != string())
@@ -1022,24 +1026,26 @@ node::write_dts(FILE *file, int indent)
 void
 device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 {
-	const string &name = n->label;
 	path.push_back(std::make_pair(n->name, n->unit_address));
-	if (name != string())
+	for (const string &name : n->labels)
 	{
-		if (node_names.find(name) == node_names.end())
+		if (name != string())
 		{
-			node_names.insert(std::make_pair(name, n.get()));
-			node_paths.insert(std::make_pair(name, path));
-		}
-		else
-		{
-			node_names[name] = nullptr;
-			auto i = node_paths.find(name);
-			if (i != node_paths.end())
+			if (node_names.find(name) == node_names.end())
 			{
-				node_paths.erase(name);
+				node_names.insert(std::make_pair(name, n.get()));
+				node_paths.insert(std::make_pair(name, path));
 			}
-			fprintf(stderr, "Label not unique: %s.  References to this label will not be resolved.\n", name.c_str());
+			else
+			{
+				node_names[name] = nullptr;
+				auto i = node_paths.find(name);
+				if (i != node_paths.end())
+				{
+					node_paths.erase(name);
+				}
+				fprintf(stderr, "Label not unique: %s.  References to this label will not be resolved.\n", name.c_str());
+			}
 		}
 	}
 	for (auto &c : n->child_nodes())
@@ -1262,14 +1268,14 @@ device_tree::parse_file(text_input_buffer &input,
 		if (input.consume('/'))
 		{
 			input.next_token();
-			n = node::parse(input, string(), string(), string(), &defines);
+			n = node::parse(input, string(), string_set(), string(), &defines);
 		}
 		else if (input.consume('&'))
 		{
 			input.next_token();
 			string name = input.parse_node_name();
 			input.next_token();
-			n = node::parse(input, std::move(name), string(), string(), &defines);
+			n = node::parse(input, std::move(name), string_set(), string(), &defines);
 		}
 		else
 		{
@@ -1546,7 +1552,7 @@ bool device_tree::parse_define(const char *def)
 	                     std::vector<string>(),
 	                     std::string(),
 	                     nullptr);
-	property_ptr p = property::parse(in, std::move(name_copy), string(), false);
+	property_ptr p = property::parse(in, std::move(name_copy), string_set(), false);
 	if (p)
 		defines[name] = p;
 	return (bool)p;

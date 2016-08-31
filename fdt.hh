@@ -67,6 +67,10 @@ typedef std::unique_ptr<node> node_ptr;
  */
 typedef std::unordered_map<std::string, property_ptr> define_map;
 /**
+ * Set of strings used for label names.
+ */
+typedef std::unordered_set<std::string> string_set;
+/**
  * Properties may contain a number of different value, each with a different
  * label.  This class encapsulates a single value.
  */
@@ -252,9 +256,9 @@ class property
 	 */
 	std::string key;
 	/**
-	 * An optional label.
+	 * Zero or more labels.
 	 */
-	std::string label;
+	string_set labels;
 	/**
 	 * The values in this property.
 	 */
@@ -301,19 +305,19 @@ class property
 	 */
 	property(text_input_buffer &input,
 	         std::string &&k,
-	         std::string &&l,
+	         string_set &&l,
 	         bool terminated,
 	         define_map *defines);
 	public:
 	/**
 	 * Creates an empty property.
 	 */
-	property(std::string &&k, std::string &&l=std::string())
-		: key(k), label(l), valid(true) {}
+	property(std::string &&k, string_set &&l=string_set())
+		: key(k), labels(l), valid(true) {}
 	/**
 	 * Copy constructor.
 	 */
-	property(property &p) : key(p.key), label(p.label), values(p.values),
+	property(property &p) : key(p.key), labels(p.labels), values(p.values),
 		valid(p.valid) {}
 	/**
 	 * Factory method for constructing a new property.  Attempts to parse a
@@ -329,7 +333,7 @@ class property
 	 */
 	static property_ptr parse(text_input_buffer &input,
 	                          std::string &&key,
-	                          std::string &&label=std::string(),
+	                          string_set &&labels=string_set(),
 	                          bool semicolonTerminated=true,
 	                          define_map *defines=0);
 	/**
@@ -386,10 +390,10 @@ class node
 {
 	public:
 	/**
-	 * The label for this node, if any.  Node labels are used as the
+	 * The labels for this node, if any.  Node labels are used as the
 	 * targets for cross references.
 	 */
-	std::string label;
+	std::unordered_set<std::string> labels;
 	/**
 	 * The name of the node.
 	 */
@@ -463,7 +467,7 @@ class node
 	 */
 	node(text_input_buffer &input,
 	     std::string &&n,
-	     std::string &&l,
+	     std::unordered_set<std::string> &&l,
 	     std::string &&a,
 	     define_map*);
 	/**
@@ -541,7 +545,7 @@ class node
 	 */
 	static node_ptr parse(text_input_buffer &input,
 	                      std::string &&name,
-	                      std::string &&label=std::string(),
+	                      std::unordered_set<std::string> &&label=std::unordered_set<std::string>(),
 	                      std::string &&address=std::string(),
 	                      define_map *defines=0);
 	/**
