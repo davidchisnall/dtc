@@ -1335,8 +1335,8 @@ device_tree::parse_file(text_input_buffer &input,
 		input.next_token();
 		input.consume(';');
 		reservations.push_back(reservation(start, len));
+		input.next_token();
 	}
-	input.next_token();
 	while (valid && !input.finished())
 	{
 		node_ptr n;
