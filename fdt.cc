@@ -243,14 +243,14 @@ property_value::write_as_bytes(FILE *file)
 }
 
 void
-property::parse_string(input_buffer &input)
+property::parse_string(text_input_buffer &input)
 {
 	property_value v;
-	assert(input[0] == '"');
+	assert(*input == '"');
 	++input;
 	std::vector<char> bytes;
 	bool isEscaped = false;
-	while (char c = input[0])
+	while (char c = *input)
 	{
 		if (c == '"' && !isEscaped)
 		{
@@ -266,9 +266,9 @@ property::parse_string(input_buffer &input)
 }
 
 void
-property::parse_cells(input_buffer &input, int cell_size)
+property::parse_cells(text_input_buffer &input, int cell_size)
 {
-	assert(input[0] == '<');
+	assert(*input == '<');
 	++input;
 	property_value v;
 	input.next_token();
@@ -356,9 +356,9 @@ property::parse_cells(input_buffer &input, int cell_size)
 }
 
 void
-property::parse_bytes(input_buffer &input)
+property::parse_bytes(text_input_buffer &input)
 {
-	assert(input[0] == '[');
+	assert(*input == '[');
 	++input;
 	property_value v;
 	input.next_token();
@@ -383,9 +383,9 @@ property::parse_bytes(input_buffer &input)
 }
 
 void
-property::parse_reference(input_buffer &input)
+property::parse_reference(text_input_buffer &input)
 {
-	assert(input[0] == '&');
+	assert(*input == '&');
 	++input;
 	input.next_token();
 	property_value v;
@@ -413,7 +413,7 @@ property::property(input_buffer &structs, input_buffer &strings)
 	}
 	// Find the name
 	input_buffer name_buffer = strings.buffer_from_offset(name_offset);
-	if (name_buffer.empty())
+	if (name_buffer.finished())
 	{
 		fprintf(stderr, "Property name offset %" PRIu32
 			" is past the end of the strings table\n",
@@ -442,7 +442,7 @@ property::property(input_buffer &structs, input_buffer &strings)
 	values.push_back(v);
 }
 
-void property::parse_define(input_buffer &input, define_map *defines)
+void property::parse_define(text_input_buffer &input, define_map *defines)
 {
 	input.consume('$');
 	if (!defines)
@@ -463,7 +463,7 @@ void property::parse_define(input_buffer &input, define_map *defines)
 	values.push_back((*found).second->values[0]);
 }
 
-property::property(input_buffer &input,
+property::property(text_input_buffer &input,
                    string &&k,
                    string &&l,
                    bool semicolonTerminated,
@@ -471,7 +471,7 @@ property::property(input_buffer &input,
 {
 	do {
 		input.next_token();
-		switch (input[0])
+		switch (*input)
 		{
 			case '$':
 			{
@@ -500,7 +500,7 @@ property::property(input_buffer &input,
 				}
 				if (!valid) return;
 				input.next_token();
-				if (input[0] != '<')
+				if (*input != '<')
 				{
 					input.parse_error("/bits/ directive is only valid on arrays");
 					valid = false;
@@ -547,7 +547,7 @@ property::parse_dtb(input_buffer &structs, input_buffer &strings)
 }
 
 property_ptr
-property::parse(input_buffer &input, string &&key, string &&label,
+property::parse(text_input_buffer &input, string &&key, string &&label,
                 bool semicolonTerminated, define_map *defines)
 {
 	property_ptr p(new property(input,
@@ -654,7 +654,7 @@ property::write_dts(FILE *file, int indent)
 }
 
 string
-node::parse_name(input_buffer &input, bool &is_property, const char *error)
+node::parse_name(text_input_buffer &input, bool &is_property, const char *error)
 {
 	if (!valid)
 	{
@@ -763,7 +763,7 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 	return;
 }
 
-node::node(input_buffer &input, string &&n, string &&l, string &&a, define_map *defines) : 
+node::node(text_input_buffer &input, string &&n, string &&l, string &&a, define_map *defines) : 
 	label(l), name(n), unit_address(a), valid(true)
 {
 	if (!input.consume('{'))
@@ -810,7 +810,7 @@ node::node(input_buffer &input, string &&n, string &&l, string &&a, define_map *
 				props.push_back(p);
 			}
 		}
-		else if (!is_property && input[0] == ('{'))
+		else if (!is_property && *input == ('{'))
 		{
 			node_ptr child = node::parse(input, std::move(child_name),
 					std::move(child_label), std::move(child_address), defines);
@@ -829,7 +829,7 @@ node::node(input_buffer &input, string &&n, string &&l, string &&a, define_map *
 		}
 		else
 		{
-			input.parse_error("Error parsing property.");
+			input.parse_error("Error parsing property.  Expected property value");
 			valid = false;
 		}
 		input.next_token();
@@ -865,7 +865,7 @@ node::sort()
 }
 
 node_ptr
-node::parse(input_buffer &input,
+node::parse(text_input_buffer &input,
             string &&name,
             string &&label,
             string &&address,
@@ -1221,91 +1221,10 @@ device_tree::resolve_cross_references()
 	}
 }
 
-bool
-device_tree::parse_include(input_buffer &input,
-                        const string &dir,
-                        std::vector<node_ptr> &roots,
-                        FILE *depfile,
-                        bool &read_header)
-{
-	if (!input.consume("/include/"))
-	{
-		return false;
-	}
-	bool reallyInclude = true;
-	if (input.consume("if "))
-	{
-		input.next_token();
-		string name = input.parse_property_name();
-		// XXX: Error handling
-		if (defines.find(name) == defines.end())
-		{
-			reallyInclude = false;
-		}
-		input.consume('/');
-	}
-	input.next_token();
-	if (!input.consume('"'))
-	{
-		input.parse_error("Expected quoted filename");
-		valid = false;
-		return false;
-	}
-	std::vector<char> bytes;
-	while (*input != '"')
-	{
-		bytes.push_back(*input);
-		++input;
-	}
-
-	string file(bytes.begin(), bytes.end());
-	string include_file = dir + '/' + file;
-	input.consume(file.c_str());
-	if (!reallyInclude)
-	{
-		input.consume('"');
-		input.next_token();
-		return true;
-	}
-
-	input_buffer *include_buffer = buffer_for_file(include_file.c_str(), false);
-
-	if (include_buffer == 0)
-	{
-		for (auto i : include_paths)
-		{
-			include_file = i + '/' + file;
-			include_buffer = buffer_for_file(include_file.c_str(), false);
-			if (include_buffer != 0)
-			{
-				break;
-			}
-		}
-	}
-	if (depfile != 0)
-	{
-		putc(' ', depfile);
-		fputs(include_file.c_str(), depfile);
-	}
-	if (include_buffer == 0)
-	{
-		input.parse_error("Unable to locate input file");
-		input.consume('"');
-		input.next_token();
-		valid = false;
-		return true;
-	}
-	input.consume('"');
-	input.next_token();
-	parse_file(*include_buffer, dir, roots, depfile, read_header);
-	return true;
-}
 
 void
-device_tree::parse_file(input_buffer &input,
-                        const string &dir,
+device_tree::parse_file(text_input_buffer &input,
                         std::vector<node_ptr> &roots,
-                        FILE *depfile,
                         bool &read_header)
 {
 	input.next_token();
@@ -1320,7 +1239,6 @@ device_tree::parse_file(input_buffer &input,
 	{
 		input.parse_error("Expected /dts-v1/; version string");
 	}
-	while (parse_include(input, dir, roots, depfile, read_header)) {}
 	// Read any memory reservations
 	while (input.consume("/memreserve/"))
 	{
@@ -1338,7 +1256,6 @@ device_tree::parse_file(input_buffer &input,
 		reservations.push_back(reservation(start, len));
 	}
 	input.next_token();
-	while (parse_include(input, dir, roots, depfile, read_header)) {}
 	while (valid && !input.finished())
 	{
 		node_ptr n;
@@ -1367,53 +1284,7 @@ device_tree::parse_file(input_buffer &input,
 			valid = false;
 		}
 		input.next_token();
-		while (parse_include(input, dir, roots, depfile, read_header)) {}
 	}
-}
-
-input_buffer*
-device_tree::buffer_for_file(const char *path, bool warn)
-{
-	if (string(path) == string("-"))
-	{
-		input_buffer *b = new stream_input_buffer();
-		if (b)
-		{
-			std::unique_ptr<input_buffer> ptr(b);
-			buffers.push_back(std::move(ptr));
-		}
-		return b;
-	}
-	int source = open(path, O_RDONLY);
-	if (source == -1)
-	{
-		if (warn)
-		{
-			fprintf(stderr, "Unable to open file '%s'.  %s\n", path, strerror(errno));
-		}
-		return 0;
-	}
-	struct stat st;
-	if (fstat(source, &st) == 0 && S_ISDIR(st.st_mode))
-	{
-		if (warn)
-		{
-			fprintf(stderr, "File %s is a directory\n", path);
-		}
-		close(source);
-		return 0;
-	}
-	input_buffer *b = new mmap_input_buffer(source);
-	// Keep the buffer that owns the memory around for the lifetime
-	// of this FDT.  Ones simply referring to it may have shorter
-	// lifetimes.
-	if (b)
-	{
-		std::unique_ptr<input_buffer> ptr(b);
-		buffers.push_back(std::move(ptr));
-	}
-	close(source);
-	return b;
 }
 
 template<class writer> void
@@ -1534,9 +1405,9 @@ device_tree::write_dts(int fd)
 }
 
 void
-device_tree::parse_dtb(const char *fn, FILE *)
+device_tree::parse_dtb(const string &fn, FILE *)
 {
-	input_buffer *in = buffer_for_file(fn);
+	auto in = input_buffer::buffer_for_file(fn);
 	if (in == 0)
 	{
 		valid = false;
@@ -1591,19 +1462,27 @@ device_tree::parse_dtb(const char *fn, FILE *)
 }
 
 void
-device_tree::parse_dts(const char *fn, FILE *depfile)
+device_tree::parse_dts(const string &fn, FILE *depfile)
 {
-	input_buffer *in = buffer_for_file(fn);
-	string dir(dirname((char*)fn));
-	if (in == 0)
+	auto in = input_buffer::buffer_for_file(fn);
+	if (!in)
 	{
 		valid = false;
 		return;
 	}
 	std::vector<node_ptr> roots;
-	input_buffer &input = *in;
+	std::unordered_set<string> defnames;
+	for (auto &i : defines)
+	{
+		defnames.insert(i.first);
+	}
+	text_input_buffer input(std::move(in),
+	                        std::move(defnames),
+	                        std::vector<string>(include_paths),
+	                        dirname(fn),
+	                        depfile);
 	bool read_header = false;
-	parse_file(input, dir, roots, depfile, read_header);
+	parse_file(input, roots, read_header);
 	switch (roots.size())
 	{
 		case 0:
@@ -1661,7 +1540,12 @@ bool device_tree::parse_define(const char *def)
 	string name(def, val-def);
 	string name_copy = name;
 	val++;
-	input_buffer in = input_buffer(val, strlen(val));
+	std::unique_ptr<input_buffer> raw(new input_buffer(val, strlen(val)));
+	text_input_buffer in(std::move(raw),
+	                     std::unordered_set<string>(),
+	                     std::vector<string>(),
+	                     std::string(),
+	                     nullptr);
 	property_ptr p = property::parse(in, std::move(name_copy), string(), false);
 	if (p)
 		defines[name] = p;

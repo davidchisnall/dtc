@@ -46,6 +46,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #ifndef MAP_PREFAULT_READ
 #define MAP_PREFAULT_READ 0
@@ -66,30 +68,98 @@ input_buffer::skip_to(char c)
 }
 
 void
-input_buffer::skip_spaces()
+text_input_buffer::skip_to(char c)
 {
-	if (cursor >= size) { return; }
-	if (cursor < 0) { return; }
-	char c = buffer[cursor];
+	while (!finished() && (*(*this) != c))
+	{
+		++(*this);
+	}
+}
+
+void
+text_input_buffer::skip_spaces()
+{
+	if (finished()) { return; }
+	char c = *(*this);
+	bool last_nl = false;
 	while ((c == ' ') || (c == '\t') || (c == '\n') || (c == '\f')
 	       || (c == '\v') || (c == '\r'))
 	{
-		cursor++;
-		if (cursor > size)
+		last_nl = ((c == '\n') || (c == '\r'));
+		++(*this);
+		if (finished())
 		{
 			c = '\0';
 		}
 		else
 		{
-			c = buffer[cursor];
+			c = *(*this);
 		}
 	}
 	// Skip C preprocessor leftovers
-	if ((c == '#') && ((cursor == 0) || (buffer[cursor-1] == '\n')))
+	if ((c == '#') && ((cursor == 0) || last_nl))
 	{
 		skip_to('\n');
 		skip_spaces();
 	}
+	if (consume("/include/"))
+	{
+		handle_include();
+		skip_spaces();
+	}
+}
+
+void
+text_input_buffer::handle_include()
+{
+	bool reallyInclude = true;
+	if (consume("if "))
+	{
+		next_token();
+		string name = parse_property_name();
+		if (defines.count(name) > 0)
+		{
+			reallyInclude = true;
+		}
+		consume('/');
+	}
+	next_token();
+	if (!consume('"'))
+	{
+		parse_error("Expected quoted filename");
+		return;
+	}
+	string file = parse_to('"');
+	consume('"');
+	if (!reallyInclude)
+	{
+		return;
+	}
+	string include_file = dir + '/' + file;
+	auto include_buffer = input_buffer::buffer_for_file(include_file, false);
+	if (include_buffer == 0)
+	{
+		for (auto i : include_paths)
+		{
+			include_file = i + '/' + file;
+			include_buffer = input_buffer::buffer_for_file(include_file, false);
+			if (include_buffer != 0)
+			{
+				break;
+			}
+		}
+	}
+	if (depfile)
+	{
+		putc(' ', depfile);
+		fputs(include_file.c_str(), depfile);
+	}
+	if (!include_buffer)
+	{
+		parse_error("Unable to locate input file");
+		return;
+	}
+	input_stack.push(std::move(include_buffer));
 }
 
 input_buffer
@@ -164,7 +234,7 @@ typedef unsigned long long valty;
  */
 struct expression
 {
-	typedef input_buffer::source_location source_location;
+	typedef text_input_buffer::source_location source_location;
 	/**
 	 * The type that is returned when computing the result.  The boolean value
 	 * indicates whether this is a valid expression.
@@ -493,7 +563,6 @@ struct divide : public binary_operator<5, std::divides<valty>>
 	result operator()() override
 	{
 		result r = (*rhs)();
-		fprintf(stderr, "Divide!\n");
 		if (r.second && (r.first == 0))
 		{
 			loc.report_error("Division by zero");
@@ -506,11 +575,11 @@ struct divide : public binary_operator<5, std::divides<valty>>
 } // anonymous namespace
 
 
-expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
+expression_ptr text_input_buffer::parse_binary_expression(expression_ptr lhs)
 {
 	next_token();
 	binary_operator_base *expr = nullptr;
-	char op = ((*this)[0]);
+	char op = *(*this);
 	source_location l = location();
 	switch (op)
 	{
@@ -532,8 +601,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 			expr = new divide(l, "/");
 			break;
 		case '<':
-			cursor++;
-			switch ((*this)[0])
+			switch (peek())
 			{
 				default:
 					parse_error("Invalid operator");
@@ -541,20 +609,20 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				case ' ':
 				case '(':
 				case '0'...'9':
-					cursor--;
 					expr = new binary_operator<8, std::less<valty>>(l, "<");
 					break;
 				case '=':
+					++(*this);
 					expr = new binary_operator<8, std::less_equal<valty>>(l, "<=");
 					break;
 				case '<':
+					++(*this);
 					expr = new binary_operator<7, lshift<valty>>(l, "<<");
 					break;
 			}
 			break;
 		case '>':
-			cursor++;
-			switch ((*this)[0])
+			switch (peek())
 			{
 				default:
 					parse_error("Invalid operator");
@@ -562,29 +630,29 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 				case '(':
 				case ' ':
 				case '0'...'9':
-					cursor--;
 					expr = new binary_operator<8, std::greater<valty>>(l, ">");
 					break;
 				case '=':
+					++(*this);
 					expr = new binary_operator<8, std::greater_equal<valty>>(l, ">=");
 					break;
 				case '>':
+					++(*this);
 					expr = new binary_operator<7, rshift<valty>>(l, ">>");
 					break;
 					return lhs;
 			}
 			break;
 		case '=':
-			if ((*this)[1] != '=')
+			if (peek() != '=')
 			{
 				parse_error("Invalid operator");
 				return nullptr;
 			}
-			consume('=');
 			expr = new binary_operator<9, std::equal_to<valty>>(l, "==");
 			break;
 		case '!':
-			if ((*this)[1] != '=')
+			if (peek() != '=')
 			{
 				parse_error("Invalid operator");
 				return nullptr;
@@ -593,7 +661,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 			expr = new binary_operator<9, std::not_equal_to<valty>>(l, "!=");
 			break;
 		case '&':
-			if ((*this)[1] == '&')
+			if (peek() == '&')
 			{
 				expr = new binary_operator<13, std::logical_and<valty>>(l, "&&");
 			}
@@ -603,7 +671,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 			}
 			break;
 		case '|':
-			if ((*this)[1] == '|')
+			if (peek() == '|')
 			{
 				expr = new binary_operator<12, std::logical_or<valty>>(l, "||");
 			}
@@ -632,7 +700,7 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 						std::move(true_case), std::move(false_case)));
 		}
 	}
-	cursor++;
+	++(*this);
 	next_token();
 	expression_ptr e(expr);
 	expression_ptr rhs(parse_expression());
@@ -658,13 +726,13 @@ expression_ptr input_buffer::parse_binary_expression(expression_ptr lhs)
 	return e;
 }
 
-expression_ptr input_buffer::parse_expression(bool stopAtParen)
+expression_ptr text_input_buffer::parse_expression(bool stopAtParen)
 {
 	next_token();
 	unsigned long long leftVal;
 	expression_ptr lhs;
 	source_location l = location();
-	switch ((*this)[0])
+	switch (*(*this))
 	{
 		case '0'...'9':
 			if (!consume_integer(leftVal))
@@ -745,9 +813,9 @@ expression_ptr input_buffer::parse_expression(bool stopAtParen)
 }
 
 bool
-input_buffer::consume_integer_expression(unsigned long long &outInt)
+text_input_buffer::consume_integer_expression(unsigned long long &outInt)
 {
-	switch ((*this)[0])
+	switch (*(*this))
 	{
 		case '(':
 		{
@@ -783,67 +851,75 @@ input_buffer::consume_hex_byte(uint8_t &outByte)
 	return true;
 }
 
-input_buffer&
-input_buffer::next_token()
+text_input_buffer&
+text_input_buffer::next_token()
 {
+	auto &self = *this;
 	int start;
 	do {
 		start = cursor;
 		skip_spaces();
+		if (finished())
+		{
+			return self;
+		}
 		// Parse /* comments
-		if ((*this)[0] == '/' && (*this)[1] == '*')
+		if (*self == '/' && peek() == '*')
 		{
 			// eat the start of the comment
-			++(*this);
-			++(*this);
+			++self;
+			++self;
 			do {
 				// Find the ending * of */
-				while ((**this != '\0') && (**this != '*'))
+				while ((*self != '\0') && (*self != '*'))
 				{
-					++(*this);
+					++self;
 				}
 				// Eat the *
-				++(*this);
-			} while ((**this != '\0') && (**this != '/'));
+				++self;
+			} while ((*self != '\0') && (*self != '/'));
 			// Eat the /
-			++(*this);
+			++self;
 		}
 		// Parse // comments
-		if (((*this)[0] == '/' && (*this)[1] == '/'))
+		if ((*self == '/' && peek() == '/'))
 		{
 			// eat the start of the comment
-			++(*this);
-			++(*this);
+			++self;
+			++self;
 			// Find the ending of the line
-			while (**this != '\n')
+			while (*self != '\n')
 			{
-				++(*this);
+				++self;
 			}
 			// Eat the \n
-			++(*this);
+			++self;
 		}
 	} while (start != cursor);
-	return *this;
+	return self;
 }
 
 void
-input_buffer::parse_error(const char *msg)
+text_input_buffer::parse_error(const char *msg)
 {
-	parse_error(msg, cursor);
+	input_buffer &b = *input_stack.top();
+	parse_error(msg, b, b.cursor);
 }
 void
-input_buffer::parse_error(const char *msg, int loc)
+text_input_buffer::parse_error(const char *msg,
+                               input_buffer &b,
+                               int loc)
 {
-	if (loc > size)
-	{
-		return;
-	}
 	int line_count = 1;
 	int line_start = 0;
 	int line_end = loc;
+	if (loc < 0 || loc > b.size)
+	{
+		return;
+	}
 	for (int i=loc ; i>0 ; --i)
 	{
-		if (buffer[i] == '\n')
+		if (b.buffer[i] == '\n')
 		{
 			line_count++;
 			if (line_start == 0)
@@ -852,20 +928,20 @@ input_buffer::parse_error(const char *msg, int loc)
 			}
 		}
 	}
-	for (int i=loc+1 ; i<size ; ++i)
+	for (int i=loc+1 ; i<b.size ; ++i)
 	{
-		if (buffer[i] == '\n')
+		if (b.buffer[i] == '\n')
 		{
 			line_end = i;
 			break;
 		}
 	}
-	fprintf(stderr, "Error on line %d: %s\n", line_count, msg);
-	fwrite(&buffer[line_start], line_end-line_start, 1, stderr);
+	fprintf(stderr, "Error at %s:%d:%d: %s\n", b.filename().c_str(), line_count, loc - line_start, msg);
+	fwrite(&b.buffer[line_start], line_end-line_start, 1, stderr);
 	putc('\n', stderr);
 	for (int i=0 ; i<(loc-line_start) ; ++i)
 	{
-		char c = (buffer[i+line_start] == '\t') ? '\t' : ' ';
+		char c = (b.buffer[i+line_start] == '\t') ? '\t' : ' ';
 		putc(c, stderr);
 	}
 	putc('^', stderr);
@@ -880,7 +956,8 @@ input_buffer::dump()
 }
 #endif
 
-mmap_input_buffer::mmap_input_buffer(int fd) : input_buffer(0, 0)
+mmap_input_buffer::mmap_input_buffer(int fd, std::string &&filename)
+	: input_buffer(0, 0), fn(filename)
 {
 	struct stat sb;
 	if (fstat(fd, &sb))
@@ -971,10 +1048,10 @@ struct is_property_name_character
 };
 
 template<class T>
-string parse(input_buffer &s)
+string parse(text_input_buffer &s)
 {
 	std::vector<char> bytes;
-	for (char c=s[0] ; T::check(c) ; c=(++s)[0])
+	for (char c=*s ; T::check(c) ; c=*(++s))
 	{
 		bytes.push_back(c);
 	}
@@ -984,30 +1061,30 @@ string parse(input_buffer &s)
 }
 
 string
-input_buffer::parse_node_name()
+text_input_buffer::parse_node_name()
 {
 	return parse<is_node_name_character>(*this);
 }
 
 string
-input_buffer::parse_property_name()
+text_input_buffer::parse_property_name()
 {
 	return parse<is_property_name_character>(*this);
 }
 
 string
-input_buffer::parse_node_or_property_name(bool &is_property)
+text_input_buffer::parse_node_or_property_name(bool &is_property)
 {
 	if (is_property)
 	{
 		return parse_property_name();
 	}
 	std::vector<char> bytes;
-	for (char c=(*this)[0] ; is_node_name_character::check(c) ; c=(++(*this))[0])
+	for (char c=*(*this) ; is_node_name_character::check(c) ; c=*(++(*this)))
 	{
 		bytes.push_back(c);
 	}
-	for (char c=(*this)[0] ; is_property_name_character::check(c) ; c=(++(*this))[0])
+	for (char c=*(*this) ; is_property_name_character::check(c) ; c=*(++(*this)))
 	{
 		bytes.push_back(c);
 		is_property = true;
@@ -1015,14 +1092,64 @@ input_buffer::parse_node_or_property_name(bool &is_property)
 	return string(bytes.begin(), bytes.end());
 }
 
-string input_buffer::parse_to(char stop)
+string
+input_buffer::parse_to(char stop)
 {
 	std::vector<char> bytes;
-	for (char c=(*this)[0] ; c != stop ; c=(++(*this))[0])
+	for (char c=*(*this) ; c != stop ; c=*(++(*this)))
 	{
 		bytes.push_back(c);
 	}
 	return string(bytes.begin(), bytes.end());
+}
+
+string
+text_input_buffer::parse_to(char stop)
+{
+	std::vector<char> bytes;
+	for (char c=*(*this) ; c != stop ; c=*(++(*this)))
+	{
+		bytes.push_back(c);
+	}
+	return string(bytes.begin(), bytes.end());
+}
+
+char
+text_input_buffer::peek()
+{
+	return (*input_stack.top())[1];
+}
+
+std::unique_ptr<input_buffer>
+input_buffer::buffer_for_file(const string &path, bool warn)
+{
+	if (path == "-")
+	{
+		std::unique_ptr<input_buffer> b(new stream_input_buffer());
+		return b;
+	}
+	int source = open(path.c_str(), O_RDONLY);
+	if (source == -1)
+	{
+		if (warn)
+		{
+			fprintf(stderr, "Unable to open file '%s'.  %s\n", path.c_str(), strerror(errno));
+		}
+		return 0;
+	}
+	struct stat st;
+	if (fstat(source, &st) == 0 && S_ISDIR(st.st_mode))
+	{
+		if (warn)
+		{
+			fprintf(stderr, "File %s is a directory\n", path.c_str());
+		}
+		close(source);
+		return 0;
+	}
+	std::unique_ptr<input_buffer> b(new mmap_input_buffer(source, std::string(path)));
+	close(source);
+	return b;
 }
 
 } // namespace dtc

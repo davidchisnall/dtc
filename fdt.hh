@@ -267,15 +267,15 @@ class property
 	/**
 	 * Parses a string property value, i.e. a value enclosed in double quotes.
 	 */
-	void parse_string(input_buffer &input);
+	void parse_string(text_input_buffer &input);
 	/**
 	 * Parses one or more 32-bit values enclosed in angle brackets.
 	 */
-	void parse_cells(input_buffer &input, int cell_size);
+	void parse_cells(text_input_buffer &input, int cell_size);
 	/**
 	 * Parses an array of bytes, contained within square brackets.
 	 */
-	void parse_bytes(input_buffer &input);
+	void parse_bytes(text_input_buffer &input);
 	/**
 	 * Parses a reference.  This is a node label preceded by an ampersand
 	 * symbol, which should expand to the full path to that node.
@@ -284,11 +284,11 @@ class property
 	 * a node name, however dtc assumes that it is a label, and so we
 	 * follow their interpretation for compatibility.
 	 */
-	void parse_reference(input_buffer &input);
+	void parse_reference(text_input_buffer &input);
 	/**
 	 * Parse a predefined macro definition for a property.
 	 */
-	void parse_define(input_buffer &input, define_map *defines);
+	void parse_define(text_input_buffer &input, define_map *defines);
 	/**
 	 * Constructs a new property from two input buffers, pointing to the
 	 * struct and strings tables in the device tree blob, respectively.
@@ -299,7 +299,7 @@ class property
 	/**
 	 * Parses a new property from the input buffer.  
 	 */
-	property(input_buffer &input,
+	property(text_input_buffer &input,
 	         std::string &&k,
 	         std::string &&l,
 	         bool terminated,
@@ -321,13 +321,13 @@ class property
 	 * error, this will return 0.
 	 */
 	static property_ptr parse_dtb(input_buffer &structs,
-	                           input_buffer &strings);
+	                              input_buffer &strings);
 	/**
 	 * Factory method for constructing a new property.  Attempts to parse a
 	 * property from the input, and returns it on success.  On any parse
 	 * error, this will return 0.
 	 */
-	static property_ptr parse(input_buffer &input,
+	static property_ptr parse(text_input_buffer &input,
 	                          std::string &&key,
 	                          std::string &&label=std::string(),
 	                          bool semicolonTerminated=true,
@@ -447,7 +447,7 @@ class node
 	 * Parses a name inside a node, writing the string passed as the last
 	 * argument as an error if it fails.  
 	 */
-	std::string parse_name(input_buffer &input,
+	std::string parse_name(text_input_buffer &input,
 	                       bool &is_property,
 	                       const char *error);
 	/**
@@ -461,7 +461,7 @@ class node
 	 * node.  The name, and optionally label and unit address, should have
 	 * already been parsed.
 	 */
-	node(input_buffer &input,
+	node(text_input_buffer &input,
 	     std::string &&n,
 	     std::string &&l,
 	     std::string &&a,
@@ -539,7 +539,7 @@ class node
 	 * cursor on the open brace of the property, after the name and so on
 	 * have been parsed.
 	 */
-	static node_ptr parse(input_buffer &input,
+	static node_ptr parse(text_input_buffer &input,
 	                      std::string &&name,
 	                      std::string &&label=std::string(),
 	                      std::string &&address=std::string(),
@@ -730,30 +730,14 @@ class device_tree
 	 */
 	void resolve_cross_references();
 	/**
-	 * Parse a top-level include directive.
-	 */
-	bool parse_include(input_buffer &input,
-	                   const std::string &dir,
-	                   std::vector<node_ptr> &roots,
-	                   FILE *depfile,
-	                   bool &read_header);
-	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has
 	 * already been read.  Some dts files place the header in an include,
 	 * rather than in the top-level file.
 	 */
-	void parse_file(input_buffer &input,
-	                const std::string &dir,
+	void parse_file(text_input_buffer &input,
 	                std::vector<node_ptr> &roots,
-	                FILE *depfile,
 	                bool &read_header);
-	/**
-	 * Allocates a new mmap()'d input buffer for use in parsing.  This
-	 * object then keeps a reference to it, ensuring that it is not
-	 * deallocated until the device tree is destroyed.
-	 */
-	input_buffer *buffer_for_file(const char *path, bool warn=true);
 	/**
 	 * Template function that writes a dtb blob using the specified writer.
 	 * The writer defines the output format (assembly, blob).
@@ -791,12 +775,12 @@ class device_tree
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains a device tree blob.
 	 */
-	void parse_dtb(const char *fn, FILE *depfile);
+	void parse_dtb(const std::string &fn, FILE *depfile);
 	/**
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains device tree source.
 	 */
-	void parse_dts(const char *fn, FILE *depfile);
+	void parse_dts(const std::string &fn, FILE *depfile);
 	/**
 	 * Returns whether this tree is valid.
 	 */
