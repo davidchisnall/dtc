@@ -55,6 +55,92 @@
 
 using std::string;
 
+namespace
+{
+/**
+ * Subclass of input_buffer that mmap()s a file and owns the resulting memory.
+ * When this object is destroyed, the memory is unmapped.
+ */
+struct mmap_input_buffer : public dtc::input_buffer
+{
+	string fn;
+	const string &filename() const override
+	{
+		return fn;
+	}
+	/**
+	 * Constructs a new buffer from the file passed in as a file
+	 * descriptor.
+	 */
+	mmap_input_buffer(int fd, string &&filename);
+	/**
+	 * Unmaps the buffer, if one exists.
+	 */
+	virtual ~mmap_input_buffer();
+};
+/**
+ * Input buffer read from standard input.  This is used for reading device tree
+ * blobs and source from standard input.  It reads the entire input into
+ * malloc'd memory, so will be very slow for large inputs.  DTS and DTB files
+ * are very rarely more than 10KB though, so this is probably not a problem.
+ */
+struct stream_input_buffer : public dtc::input_buffer
+{
+	const string &filename() const override
+	{
+		static string n = "<standard input>";
+		return n;
+	}
+	/**
+	 * The buffer that will store the data read from the standard input.
+	 */
+	std::vector<char> b;
+	/**
+	 * Constructs a new buffer from the standard input.
+	 */
+	stream_input_buffer();
+};
+
+mmap_input_buffer::mmap_input_buffer(int fd, std::string &&filename)
+	: input_buffer(0, 0), fn(filename)
+{
+	struct stat sb;
+	if (fstat(fd, &sb))
+	{
+		perror("Failed to stat file");
+	}
+	size = sb.st_size;
+	buffer = (const char*)mmap(0, size, PROT_READ, MAP_PRIVATE |
+			MAP_PREFAULT_READ, fd, 0);
+	if (buffer == MAP_FAILED)
+	{
+		perror("Failed to mmap file");
+		exit(EXIT_FAILURE);
+	}
+}
+
+mmap_input_buffer::~mmap_input_buffer()
+{
+	if (buffer != 0)
+	{
+		munmap((void*)buffer, size);
+	}
+}
+
+stream_input_buffer::stream_input_buffer() : input_buffer(0, 0)
+{
+	int c;
+	while ((c = fgetc(stdin)) != EOF)
+	{
+		b.push_back(c);
+	}
+	buffer = b.data();
+	size = b.size();
+}
+
+} // Anonymous namespace
+
+
 namespace dtc
 {
 
@@ -956,42 +1042,6 @@ input_buffer::dump()
 }
 #endif
 
-mmap_input_buffer::mmap_input_buffer(int fd, std::string &&filename)
-	: input_buffer(0, 0), fn(filename)
-{
-	struct stat sb;
-	if (fstat(fd, &sb))
-	{
-		perror("Failed to stat file");
-	}
-	size = sb.st_size;
-	buffer = (const char*)mmap(0, size, PROT_READ, MAP_PRIVATE |
-			MAP_PREFAULT_READ, fd, 0);
-	if (buffer == MAP_FAILED)
-	{
-		perror("Failed to mmap file");
-		exit(EXIT_FAILURE);
-	}
-}
-
-mmap_input_buffer::~mmap_input_buffer()
-{
-	if (buffer != 0)
-	{
-		munmap((void*)buffer, size);
-	}
-}
-
-stream_input_buffer::stream_input_buffer() : input_buffer(0, 0)
-{
-	int c;
-	while ((c = fgetc(stdin)) != EOF)
-	{
-		b.push_back(c);
-	}
-	buffer = b.data();
-	size = b.size();
-}
 
 namespace
 {

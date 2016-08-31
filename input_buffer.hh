@@ -259,50 +259,6 @@ inline bool input_buffer::consume_binary(uint8_t &out)
 }
 
 /**
- * Subclass of input_buffer that mmap()s a file and owns the resulting memory.
- * When this object is destroyed, the memory is unmapped.
- */
-struct mmap_input_buffer : public input_buffer
-{
-	std::string fn;
-	const std::string &filename() const override
-	{
-		return fn;
-	}
-	/**
-	 * Constructs a new buffer from the file passed in as a file
-	 * descriptor.  
-	 */
-	mmap_input_buffer(int fd, std::string &&filename);
-	/**
-	 * Unmaps the buffer, if one exists.
-	 */
-	virtual ~mmap_input_buffer();
-};
-/**
- * Input buffer read from standard input.  This is used for reading device tree
- * blobs and source from standard input.  It reads the entire input into
- * malloc'd memory, so will be very slow for large inputs.  DTS and DTB files
- * are very rarely more than 10KB though, so this is probably not a problem.
- */
-struct stream_input_buffer : public input_buffer
-{
-	const std::string &filename() const override
-	{
-		static std::string n = "<standard input>";
-		return n;
-	}
-	/**
-	 * The buffer that will store the data read from the standard input.
-	 */
-	std::vector<char> b;
-	/**
-	 * Constructs a new buffer from the standard input.
-	 */
-	stream_input_buffer();
-};
-
-/**
  * An input buffer subclass used for parsing DTS files.  This manages a stack
  * of input buffers to handle /input/ operations.
  */
