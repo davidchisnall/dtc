@@ -861,6 +861,7 @@ node::node(text_input_buffer &input,
 		}
 		input.next_token();
 	}
+	input.next_token();
 	input.consume(';');
 }
 
