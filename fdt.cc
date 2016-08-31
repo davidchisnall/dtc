@@ -783,6 +783,27 @@ node::node(text_input_buffer &input,
 		bool is_property = false;
 		string child_name, child_address;
 		std::unordered_set<string> child_labels;
+		if (input.consume("/delete-node/"))
+		{
+			input.next_token();
+			child_name = input.parse_node_name();
+			if (child_name == string())
+			{
+				input.parse_error("Expected node name");
+				valid = false;
+				continue;
+			}
+			input.next_token();
+			if (!input.consume(';'))
+			{
+				input.parse_error("Expected semicolon");
+				valid = false;
+				continue;
+			}
+			deleted_children.insert(child_name);
+			input.next_token();
+			continue;
+		}
 		child_name = parse_name(input, is_property,
 				"Expected property or node name");
 		while (input.consume(':'))
@@ -949,7 +970,16 @@ node::merge_node(node_ptr other)
 		{
 			if (i->name == c->name && i->unit_address == c->unit_address)
 			{
-				i->merge_node(std::move(c));
+				if (other->deleted_children.count(c->name) > 0)
+				{
+					other->deleted_children.erase(c->name);
+					i = std::move(c);
+					continue;
+				}
+				else
+				{
+					i->merge_node(std::move(c));
+				}
 				found = true;
 				break;
 			}
@@ -958,6 +988,20 @@ node::merge_node(node_ptr other)
 		{
 			children.push_back(std::move(c));
 		}
+	}
+	children.erase(std::remove_if(children.begin(), children.end(),
+			[&](const node_ptr &p) {
+				if (other->deleted_children.count(p->name) > 0)
+				{
+					other->deleted_children.erase(p->name);
+					return true;
+				}
+				return false;
+			}), children.end());
+	for (auto &d : other->deleted_children)
+	{
+		fprintf(stderr, "Error: Node %s attempting to delete nonexistent child %s\n",
+				name.c_str(), d.c_str());
 	}
 }
 

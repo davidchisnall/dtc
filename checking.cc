@@ -44,6 +44,30 @@ namespace checking
 
 namespace
 {
+	struct deleted_node_checker : public checker
+	{
+		deleted_node_checker(const char *name) : checker(name) {}
+		virtual bool check_node(device_tree *, const node_ptr &n)
+		{
+			auto &deleted = n->deleted_child_nodes();
+			if (deleted.empty())
+			{
+				return true;
+			}
+			bool plural = deleted.size() > 1;
+			string errmsg("Attempts to delete ");
+			errmsg += plural ? "nodes" : "node";
+			errmsg += " that ";
+			errmsg += plural ? "were" : "was";
+			errmsg += " not added in merge: ";
+			for (auto &d : deleted)
+			{
+				errmsg += d;
+			}
+			report_error(errmsg.c_str());
+			return false;
+		}
+	};
 	/**
 	 * Checker that verifies that every node that has children has
 	 * #address-cells and #size-cells properties.
@@ -207,6 +231,8 @@ check_manager::check_manager()
 	add_property_size_checker("type-phandle", string("phandle"), 4);
 	disabled_checkers.insert(std::make_pair(string("cells-attributes"),
 		new address_cells_checker("cells-attributes")));
+	checkers.insert(std::make_pair(string("deleted-nodes"),
+		new deleted_node_checker("deleted-nodes")));
 }
 
 bool

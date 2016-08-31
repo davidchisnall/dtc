@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+    foo {
+    };
+
+    bar {
+    };
+ // CHECK: Error: Attempts to delete node that was not
+ // CHECK: added in merge: bar, while checking node: /
+ // [-Wdeleted-nodes]
+    /delete-node/ bar;
+};
