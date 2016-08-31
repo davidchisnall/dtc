@@ -613,11 +613,13 @@ property::write_dts(FILE *file, int indent)
 	{
 		putc('\t', file);
 	}
+#ifdef PRINT_LABELS
 	for (auto &l : labels)
 	{
 		fputs(l.c_str(), file);
 		fputs(": ", file);
 	}
+#endif
 	if (key != string())
 	{
 		fputs(key.c_str(), file);
