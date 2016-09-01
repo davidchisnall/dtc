@@ -1101,14 +1101,15 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 	{
 		if (name != string())
 		{
-			if (node_names.find(name) == node_names.end())
+			auto iter = node_names.find(name);
+			if (iter == node_names.end())
 			{
 				node_names.insert(std::make_pair(name, n.get()));
 				node_paths.insert(std::make_pair(name, path));
 			}
 			else
 			{
-				node_names[name] = nullptr;
+				node_names.erase(iter);
 				auto i = node_paths.find(name);
 				if (i != node_paths.end())
 				{
