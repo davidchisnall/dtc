@@ -643,18 +643,20 @@ struct bit_not
 	}
 };
 
-struct divide : public binary_operator<5, std::divides<valty>>
+template<typename T>
+struct divmod : public binary_operator<5, T>
 {
-	using binary_operator<5, std::divides<valty>>::binary_operator;
+	using binary_operator<5, T>::binary_operator;
+	using binary_operator_base::result;
 	result operator()() override
 	{
-		result r = (*rhs)();
+		result r = (*binary_operator_base::rhs)();
 		if (r.second && (r.first == 0))
 		{
-			loc.report_error("Division by zero");
+			expression::loc.report_error("Division by zero");
 			return {0, false};
 		}
-		return binary_operator<5, std::divides<valty>>::operator()();
+		return binary_operator<5, T>::operator()();
 	}
 };
 
@@ -678,13 +680,13 @@ expression_ptr text_input_buffer::parse_binary_expression(expression_ptr lhs)
 			expr = new binary_operator<6, std::minus<valty>>(l, "-");
 			break;
 		case '%':
-			expr = new binary_operator<5, std::modulus<valty>>(l, "%");
+			expr = new divmod<std::modulus<valty>>(l, "/");
 			break;
 		case '*':
 			expr = new binary_operator<5, std::multiplies<valty>>(l, "*");
 			break;
 		case '/':
-			expr = new divide(l, "/");
+			expr = new divmod<std::divides<valty>>(l, "/");
 			break;
 		case '<':
 			switch (peek())
