@@ -251,6 +251,10 @@ text_input_buffer::handle_include()
 input_buffer
 input_buffer::buffer_from_offset(int offset, int s)
 {
+	if (offset < 0)
+	{
+		return input_buffer();
+	}
 	if (s == 0)
 	{
 		s = size - offset;
@@ -278,7 +282,7 @@ input_buffer::consume(const char *str)
 	{
 		for (int i=0 ; i<len ; ++i)
 		{
-			if (str[i] != buffer[cursor + i])
+			if (str[i] != (*this)[i])
 			{
 				return false;
 			}
@@ -298,7 +302,7 @@ input_buffer::consume_integer(unsigned long long &outInt)
 	{
 		return false;
 	}
-	char *end=0;
+	char *end= const_cast<char*>(&buffer[size]);
 	outInt = strtoull(&buffer[cursor], &end, 0);
 	if (end == &buffer[cursor])
 	{

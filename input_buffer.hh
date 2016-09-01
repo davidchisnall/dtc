@@ -230,6 +230,10 @@ class input_buffer
 		out = 0;
 		for (int i=0 ; i<type_size ; ++i)
 		{
+			if (size < cursor)
+			{
+				return false;
+			}
 			out <<= 8;
 			out |= (((T)buffer[cursor++]) & 0xff);
 		}
