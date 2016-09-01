@@ -215,6 +215,7 @@ text_input_buffer::handle_include()
 		parse_error("Expected quoted filename");
 		return;
 	}
+	auto loc = location();
 	string file = parse_to('"');
 	consume('"');
 	if (!reallyInclude)
@@ -242,7 +243,7 @@ text_input_buffer::handle_include()
 	}
 	if (!include_buffer)
 	{
-		parse_error("Unable to locate input file");
+		loc.report_error("Unable to locate input file");
 		return;
 	}
 	input_stack.push(std::move(include_buffer));
