@@ -764,6 +764,28 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 	return;
 }
 
+
+node::node(const std::vector<std::pair<std::string, std::string>> &syms)
+	: name("__symbols__")
+{
+	for (auto &s : syms)
+	{
+		property_value v;
+		v.string_data = s.second;
+		v.type = property_value::STRING;
+		std::string name = s.first;
+		auto p = std::make_shared<property>(std::move(name));
+		p->add_value(v);
+		props.push_back(p);
+	}
+}
+
+node_ptr node::create_symbols_node(const std::vector<std::pair<std::string, std::string>> &syms)
+{
+	node_ptr n(new node(syms));
+	return n;
+}
+
 node::node(text_input_buffer &input,
            string &&n,
            std::unordered_set<string> &&l,
@@ -1631,6 +1653,32 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	}
 	collect_names();
 	resolve_cross_references();
+	if (write_symbols)
+	{
+		std::vector<std::pair<string, string>> symbols;
+		for (auto &s : node_paths)
+		{
+			string path;
+			auto p = s.second.begin();
+			auto pe = s.second.end();
+			if (p != pe)
+			{
+				// Skip the first name in the path.  It's always "", and implicitly /
+				for (++p ; p!=pe ; ++p)
+				{
+					path += '/';
+					path += p->first;
+				}
+			}
+			symbols.push_back(std::make_pair(s.first, path));
+
+		}
+		for (auto &s : symbols)
+		{
+			fprintf(stderr, "Symbol: %s: %s\n", s.first.c_str(), s.second.c_str());
+		}
+		root->add_child(node::create_symbols_node(std::move(symbols)));
+	}
 }
 
 bool device_tree::parse_define(const char *def)

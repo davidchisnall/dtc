@@ -479,6 +479,10 @@ class node
 	     std::string &&a,
 	     define_map*);
 	/**
+	 * Creates a symbols node from the list of named symbols.
+	 */
+	node(const std::vector<std::pair<std::string, std::string>> &syms);
+	/**
 	 * Comparison function for properties, used when sorting the properties
 	 * vector.  Orders the properties based on their names.
 	 */
@@ -579,6 +583,10 @@ class node
 	 */
 	static node_ptr parse_dtb(input_buffer &structs, input_buffer &strings);
 	/**
+	 * Construct a new node that represents a symbol table:w
+	 */
+	static node_ptr create_symbols_node(const std::vector<std::pair<std::string, std::string>> &syms);
+	/**
 	 * Returns a property corresponding to the specified key, or 0 if this
 	 * node does not contain a property of that name.
 	 */
@@ -589,6 +597,13 @@ class node
 	inline void add_property(property_ptr &p)
 	{
 		props.push_back(p);
+	}
+	/**
+	 * Adds a new child to this node.
+	 */
+	inline void add_child(node_ptr &&n)
+	{
+		children.push_back(std::move(n));
 	}
 	/**
 	 * Merges a node into this one.  Any properties present in both are
@@ -771,6 +786,11 @@ class device_tree
 	template<class writer>
 	void write(int fd);
 	public:
+	/**
+	 * Should we write the __symbols__ node (to allow overlays to be linked
+	 * against this blob)?
+	 */
+	bool write_symbols = false;
 	/**
 	 * Returns the node referenced by the property.  If this is a tree that
 	 * is in source form, then we have a string that we can use to index
