@@ -1673,10 +1673,6 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 			symbols.push_back(std::make_pair(s.first, path));
 
 		}
-		for (auto &s : symbols)
-		{
-			fprintf(stderr, "Symbol: %s: %s\n", s.first.c_str(), s.second.c_str());
-		}
 		root->add_child(node::create_symbols_node(std::move(symbols)));
 	}
 }
