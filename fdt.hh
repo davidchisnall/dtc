@@ -479,9 +479,9 @@ class node
 	     std::string &&a,
 	     define_map*);
 	/**
-	 * Creates a symbols node from the list of named symbols.
+	 * Creates a special node with the specified name and properties.
 	 */
-	node(const std::vector<std::pair<std::string, std::string>> &syms);
+	node(const std::string &n, const std::vector<property_ptr> &p);
 	/**
 	 * Comparison function for properties, used when sorting the properties
 	 * vector.  Orders the properties based on their names.
@@ -583,9 +583,10 @@ class node
 	 */
 	static node_ptr parse_dtb(input_buffer &structs, input_buffer &strings);
 	/**
-	 * Construct a new node that represents a symbol table:w
+	 * Construct a new special node from a name and set of properties.
 	 */
-	static node_ptr create_symbols_node(const std::vector<std::pair<std::string, std::string>> &syms);
+	static node_ptr create_special_node(const std::string &name,
+			const std::vector<property_ptr> &props);
 	/**
 	 * Returns a property corresponding to the specified key, or 0 if this
 	 * node does not contain a property of that name.

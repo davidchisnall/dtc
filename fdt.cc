@@ -765,24 +765,17 @@ node::node(input_buffer &structs, input_buffer &strings) : valid(true)
 }
 
 
-node::node(const std::vector<std::pair<std::string, std::string>> &syms)
-	: name("__symbols__")
+node::node(const std::string &n,
+           const std::vector<property_ptr> &p)
+	: name(n)
 {
-	for (auto &s : syms)
-	{
-		property_value v;
-		v.string_data = s.second;
-		v.type = property_value::STRING;
-		std::string name = s.first;
-		auto p = std::make_shared<property>(std::move(name));
-		p->add_value(v);
-		props.push_back(p);
-	}
+	props.insert(props.begin(), p.begin(), p.end());
 }
 
-node_ptr node::create_symbols_node(const std::vector<std::pair<std::string, std::string>> &syms)
+node_ptr node::create_special_node(const std::string &name,
+                                   const std::vector<property_ptr> &props)
 {
-	node_ptr n(new node(syms));
+	node_ptr n(new node(name, props));
 	return n;
 }
 
@@ -1655,7 +1648,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	resolve_cross_references();
 	if (write_symbols)
 	{
-		std::vector<std::pair<string, string>> symbols;
+		std::vector<property_ptr> symbols;
 		for (auto &s : node_paths)
 		{
 			string path;
@@ -1670,10 +1663,16 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					path += p->first;
 				}
 			}
-			symbols.push_back(std::make_pair(s.first, path));
+			property_value v;
+			v.string_data = path;
+			v.type = property_value::STRING;
+			std::string name = s.first;
+			auto prop = std::make_shared<property>(std::move(name));
+			prop->add_value(v);
+			symbols.push_back(prop);
 
 		}
-		root->add_child(node::create_symbols_node(std::move(symbols)));
+		root->add_child(node::create_special_node("__symbols__", symbols));
 	}
 }
 
