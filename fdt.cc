@@ -1764,7 +1764,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 			// is 'fixup' and whose value is as described above.
 			for (auto &i : fixups)
 			{
-				if (i.val.type != property_value::PHANDLE)
+				if (!i.val.is_phandle())
 				{
 					continue;
 				}
