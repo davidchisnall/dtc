@@ -136,12 +136,12 @@ dirbasename(std::function<char*(char*)> fn, const string &s)
 }
 }
 
-std::string dirname(const string &s)
+string dirname(const string &s)
 {
 	return dirbasename(::dirname, s);
 }
 
-std::string basename(const string &s)
+string basename(const string &s)
 {
 	return dirbasename(::basename, s);
 }

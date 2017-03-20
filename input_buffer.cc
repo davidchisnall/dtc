@@ -101,7 +101,7 @@ struct stream_input_buffer : public dtc::input_buffer
 	stream_input_buffer();
 };
 
-mmap_input_buffer::mmap_input_buffer(int fd, std::string &&filename)
+mmap_input_buffer::mmap_input_buffer(int fd, string &&filename)
 	: input_buffer(0, 0), fn(filename)
 {
 	struct stat sb;
@@ -1213,7 +1213,7 @@ input_buffer::buffer_for_file(const string &path, bool warn)
 		close(source);
 		return 0;
 	}
-	std::unique_ptr<input_buffer> b(new mmap_input_buffer(source, std::string(path)));
+	std::unique_ptr<input_buffer> b(new mmap_input_buffer(source, string(path)));
 	close(source);
 	return b;
 }
