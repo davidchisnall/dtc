@@ -1723,17 +1723,21 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		// resolved.
 		if (is_plugin)
 		{
-			// Create the fixups entry value.  This is of the form:
-			// {path}:{property name}:{offset}
-			auto set_property_value_to_path = [&](property_value &v, fixup &i)
+			// Create the fixups entry.  This is of the form:
+			// {target} = {path}:{property name}:{offset}
+			auto create_fixup_entry = [&](fixup &i, string target)
 				{
 					string value = path_as_string(i.path);
 					value += ':';
 					value += i.prop->get_key();
 					value += ':';
 					value += std::to_string(i.prop->offset_of_value(i.val));
+					property_value v;
 					v.string_data = value;
 					v.type = property_value::STRING;
+					auto prop = std::make_shared<property>(std::move(target));
+					prop->add_value(v);
+					return prop;
 				};
 			// If we have any unresolved phandle references in this plugin,
 			// then we must update them to 0xdeadbeef and leave a property in
@@ -1745,12 +1749,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 				for (auto &i : unresolved_fixups)
 				{
 					auto &val = i.get().val;
-					string target = val.string_data;
-					auto prop = std::make_shared<property>(std::move(target));
-					property_value v;
-					set_property_value_to_path(v, i);
-					prop->add_value(v);
-					symbols.push_back(prop);
+					symbols.push_back(create_fixup_entry(i, val.string_data));
 					val.byte_data.push_back(0xde);
 					val.byte_data.push_back(0xad);
 					val.byte_data.push_back(0xbe);
@@ -1769,12 +1768,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 				{
 					continue;
 				}
-				string target("fixup");
-				auto prop = std::make_shared<property>(std::move(target));
-				property_value v;
-				set_property_value_to_path(v, i);
-				prop->add_value(v);
-				symbols.push_back(prop);
+				symbols.push_back(create_fixup_entry(i, "fixup"));
 			}
 			// We've iterated over all fixups, but only emit the
 			// __local_fixups__ if we found some that were resolved internally.
