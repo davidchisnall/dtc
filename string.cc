@@ -127,9 +127,8 @@ std::string dirname(const string &s)
 	{
 		return string();
 	}
-	char *str = strdup(s.c_str());
-	string dn(::dirname(str));
-	free(str);
+	std::unique_ptr<char, decltype(free)*> str = {strdup(s.c_str()), free};
+	string dn(::dirname(str.get()));
 	return dn;
 }
 
@@ -139,9 +138,8 @@ std::string basename(const string &s)
 	{
 		return string();
 	}
-	char *str = strdup(s.c_str());
-	string bn(::basename(str));
-	free(str);
+	std::unique_ptr<char, decltype(free)*> str = {strdup(s.c_str()), free};
+	string bn(::basename(str.get()));
 	return bn;
 }
 } // namespace dtc
