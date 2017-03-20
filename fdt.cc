@@ -1234,7 +1234,7 @@ device_tree::resolve_cross_references()
 	{
 		phandle_set.insert({&i.val, i});
 	}
-	std::vector<fixup*> sorted_phandles;
+	std::vector<std::reference_wrapper<fixup>> sorted_phandles;
 	root->visit([&](node &n) {
 		for (auto &p : n.properties())
 		{
@@ -1243,7 +1243,7 @@ device_tree::resolve_cross_references()
 				auto i = phandle_set.find(&v);
 				if (i != phandle_set.end())
 				{
-					sorted_phandles.push_back(&i->second);
+					sorted_phandles.push_back(i->second);
 				}
 			}
 		}
@@ -1253,7 +1253,7 @@ device_tree::resolve_cross_references()
 	uint32_t phandle = 1;
 	for (auto &i : sorted_phandles)
 	{
-		string target_name = i->val.string_data;
+		string target_name = i.get().val.string_data;
 		node *target = nullptr;
 		string possible;
 		// If the node name is a path, then look it up by following the path,
@@ -1369,8 +1369,8 @@ device_tree::resolve_cross_references()
 				target->add_property(p);
 			}
 		}
-		p->begin()->push_to_buffer(i->val.byte_data);
-		assert(i->val.byte_data.size() == 4);
+		p->begin()->push_to_buffer(i.get().val.byte_data);
+		assert(i.get().val.byte_data.size() == 4);
 	}
 }
 
@@ -1725,13 +1725,13 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		{
 			// Create the fixups entry value.  This is of the form:
 			// {path}:{property name}:{offset}
-			auto set_property_value_to_path = [&](property_value &v, fixup *i)
+			auto set_property_value_to_path = [&](property_value &v, fixup &i)
 				{
-					string value = path_as_string(i->path);
+					string value = path_as_string(i.path);
 					value += ':';
-					value += i->prop->get_key();
+					value += i.prop->get_key();
 					value += ':';
-					value += std::to_string(i->prop->offset_of_value(i->val));
+					value += std::to_string(i.prop->offset_of_value(i.val));
 					v.string_data = value;
 					v.type = property_value::STRING;
 				};
@@ -1742,19 +1742,20 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 			if (!unresolved_fixups.empty())
 			{
 				symbols.clear();
-				for (auto *i : unresolved_fixups)
+				for (auto &i : unresolved_fixups)
 				{
-					string target = i->val.string_data;
+					auto &val = i.get().val;
+					string target = val.string_data;
 					auto prop = std::make_shared<property>(std::move(target));
 					property_value v;
 					set_property_value_to_path(v, i);
 					prop->add_value(v);
 					symbols.push_back(prop);
-					i->val.byte_data.push_back(0xde);
-					i->val.byte_data.push_back(0xad);
-					i->val.byte_data.push_back(0xbe);
-					i->val.byte_data.push_back(0xef);
-					i->val.type = property_value::BINARY;
+					val.byte_data.push_back(0xde);
+					val.byte_data.push_back(0xad);
+					val.byte_data.push_back(0xbe);
+					val.byte_data.push_back(0xef);
+					val.type = property_value::BINARY;
 				}
 				root->add_child(node::create_special_node("__fixups__", symbols));
 			}
@@ -1771,7 +1772,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 				string target("fixup");
 				auto prop = std::make_shared<property>(std::move(target));
 				property_value v;
-				set_property_value_to_path(v, &i);
+				set_property_value_to_path(v, i);
 				prop->add_value(v);
 				symbols.push_back(prop);
 			}

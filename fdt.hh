@@ -732,7 +732,7 @@ class device_tree
 	 * The locations of all of the values that are supposed to become phandle
 	 * references, but refer to things outside of this file.  
 	 */
-	std::vector<fixup*> unresolved_fixups;
+	std::vector<std::reference_wrapper<fixup>> unresolved_fixups;
 	/**
 	 * The names of nodes that target phandles.
 	 */
