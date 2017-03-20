@@ -211,6 +211,10 @@ struct property_value
 	 * false otherwise.
 	 */
 	bool try_to_merge(property_value &other);
+	/**
+	 * Returns the size (in bytes) of this property value.
+	 */
+	size_t size();
 	private:
 	/**
 	 * Returns whether the value is of the specified type.  If the type of
@@ -380,6 +384,10 @@ class property
 	 * applicable way that it can determine.
 	 */
 	void write_dts(FILE *file, int indent);
+	/**
+	 * Returns the byte offset of the specified property value.
+	 */
+	size_t offset_of_value(property_value &val);
 };
 
 /**
@@ -697,11 +705,34 @@ class device_tree
 	 */
 	std::vector<property_value*> cross_references;
 	/**
+	 * The location of something requiring a fixup entry.
+	 */
+	struct fixup
+	{
+		/**
+		 * The path to the node.
+		 */
+		node_path path;
+		/**
+		 * The property containing the reference.
+		 */
+		property_ptr prop;
+		/**
+		 * The property value that contains the reference.
+		 */
+		property_value &val;
+	};
+	/**
 	 * A collection of property values that refer to phandles.  These will
 	 * be replaced by the value of the phandle property in their
 	 * destination.
 	 */
-	std::vector<property_value*> phandles;
+	std::vector<fixup> fixups;
+	/**
+	 * The locations of all of the values that are supposed to become phandle
+	 * references, but refer to things outside of this file.  
+	 */
+	std::vector<fixup*> unresolved_fixups;
 	/**
 	 * The names of nodes that target phandles.
 	 */
@@ -748,6 +779,10 @@ class device_tree
 	 * The number of bytes of padding to add to the end of the blob.
 	 */
 	uint32_t blob_padding;
+	/**
+	 * Is this tree a plugin?
+	 */
+	bool is_plugin;
 	/**
 	 * Visit all of the nodes recursively, and if they have labels then add
 	 * them to the node_paths and node_names vectors so that they can be

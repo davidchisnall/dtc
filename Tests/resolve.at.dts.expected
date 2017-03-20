@@ -1,0 +1,29 @@
+/dts-v1/;
+
+/  {
+
+	quxnode {
+
+		qux = <0x1>;
+	};
+	quuxnode {
+
+		quux = <0x1 0x2 0x3 0x4 0xdeadbeef>;
+	};
+	baz {
+
+		phandle = <0x1>;
+	};
+	__symbols__ {
+
+		BAZ = "/baz";
+	};
+	__fixups__ {
+
+		FOO = "/quuxnode:quux:16";
+	};
+	__local_fixups__ {
+
+		fixup = "/quxnode:qux:0";
+	};
+};
