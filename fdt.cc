@@ -296,7 +296,6 @@ property::parse_cells(text_input_buffer &input, int cell_size)
 				return;
 			}
 			input.next_token();
-			bool isPath = false;
 			string referenced;
 			if (!input.consume('{'))
 			{
@@ -306,7 +305,6 @@ property::parse_cells(text_input_buffer &input, int cell_size)
 			{
 				referenced = input.parse_to('}');
 				input.consume('}');
-				isPath = true;
 			}
 			if (referenced.empty())
 			{
