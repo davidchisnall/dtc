@@ -650,7 +650,14 @@ class device_tree
 	 * Type used for node paths.  A node path is sequence of names and unit
 	 * addresses.
 	 */
-	typedef std::vector<std::pair<std::string,std::string> > node_path;
+	class node_path : public std::vector<std::pair<std::string,std::string>>
+	{
+		public:
+		/**
+		 * Converts this to a string representation.
+		 */
+		std::string to_string() const;
+	};
 	/**
 	 * Name that we should use for phandle nodes.
 	 */

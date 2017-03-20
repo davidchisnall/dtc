@@ -1618,6 +1618,30 @@ device_tree::parse_dtb(const string &fn, FILE *)
 	valid = (root != 0);
 }
 
+string
+device_tree::node_path::to_string() const
+{
+	string path;
+	auto p = begin();
+	auto pe = end();
+	if ((p == pe) || (p+1 == pe))
+	{
+		return string("/");
+	}
+	// Skip the first name in the path.  It's always "", and implicitly /
+	for (++p ; p!=pe ; ++p)
+	{
+		path += '/';
+		path += p->first;
+		if (!(p->second.empty()))
+		{
+			path += '@';
+			path += p->second;
+		}
+	}
+	return path;
+}
+
 void
 device_tree::parse_dts(const string &fn, FILE *depfile)
 {
@@ -1682,23 +1706,6 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	}
 	collect_names();
 	resolve_cross_references();
-	auto path_as_string = [](const node_path &v)
-		{
-			string path;
-			auto p = v.begin();
-			auto pe = v.end();
-			if ((p == pe) || (p+1 == pe))
-			{
-				return string("/");
-			}
-			// Skip the first name in the path.  It's always "", and implicitly /
-			for (++p ; p!=pe ; ++p)
-			{
-				path += '/';
-				path += p->first;
-			}
-			return path;
-		};
 	if (write_symbols)
 	{
 		std::vector<property_ptr> symbols;
@@ -1709,7 +1716,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		for (auto &s : node_paths)
 		{
 			property_value v;
-			v.string_data = path_as_string(s.second);
+			v.string_data = s.second.to_string();
 			v.type = property_value::STRING;
 			string name = s.first;
 			auto prop = std::make_shared<property>(std::move(name));
@@ -1727,7 +1734,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 			// {target} = {path}:{property name}:{offset}
 			auto create_fixup_entry = [&](fixup &i, string target)
 				{
-					string value = path_as_string(i.path);
+					string value = i.path.to_string();
 					value += ':';
 					value += i.prop->get_key();
 					value += ':';
