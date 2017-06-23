@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/{
+	soc@deadbeef {
+		baz: baz@0000 {
+		};
+	};
+
+	foo {
+		cross = &baz;
+	};
+};
