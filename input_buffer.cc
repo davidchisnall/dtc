@@ -204,9 +204,9 @@ text_input_buffer::handle_include()
 	{
 		next_token();
 		string name = parse_property_name();
-		if (defines.count(name) > 0)
+		if (defines.count(name) == 0)
 		{
-			reallyInclude = true;
+			reallyInclude = false;
 		}
 		consume('/');
 	}
