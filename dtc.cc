@@ -80,7 +80,7 @@ static void usage(const string &argv0)
  */
 static void version(const char* progname)
 {
-	fprintf(stdout, "Version: %s %d.%d.%d gnu compatible %d.%d.%d\n", progname,
+	fprintf(stdout, "Version: %s %d.%d.%d compatible with gpl dtc %d.%d.%d\n", progname,
 		version_major, version_minor, version_patch,
 		version_major_compatible, version_minor_compatible,
 		version_patch_compatible);
