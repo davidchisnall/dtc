@@ -1,0 +1,6 @@
+/dts-v1/;
+
+/ {
+	// CHECK: Cannot open binary include file
+	data = [01 02], /incbin/("flibble_imaginary_file"),  [ff fe];
+};

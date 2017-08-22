@@ -1,0 +1,7 @@
+/dts-v1/;
+
+/ {
+	// CHECK: Error at 
+	// CHECK: incbin_unterminated.dts.fc:6:33: Syntax error, expected ')' to terminate /incbin/(
+	data = [01 02], /incbin/("bytes",  [ff fe];
+};

@@ -250,6 +250,35 @@ text_input_buffer::handle_include()
 	input_stack.push(std::move(include_buffer));
 }
 
+bool text_input_buffer::read_binary_file(const std::string &filename, byte_buffer &b)
+{
+	string include_file = dir + '/' + filename;
+	auto include_buffer = input_buffer::buffer_for_file(include_file, false);
+	if (include_buffer == 0)
+	{
+		for (auto i : include_paths)
+		{
+			include_file = i + '/' + filename;
+			include_buffer = input_buffer::buffer_for_file(include_file, false);
+			if (include_buffer != 0)
+			{
+				break;
+			}
+		}
+	}
+	if (!include_buffer)
+	{
+		return false;
+	}
+	if (depfile)
+	{
+		putc(' ', depfile);
+		fputs(include_file.c_str(), depfile);
+	}
+	b.insert(b.begin(), include_buffer->begin(), include_buffer->end());
+	return true;
+}
+
 input_buffer
 input_buffer::buffer_from_offset(int offset, int s)
 {

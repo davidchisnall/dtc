@@ -495,6 +495,29 @@ property::property(text_input_buffer &input,
 				return;
 			case '/':
 			{
+				if (input.consume("/incbin/(\""))
+				{
+					auto loc = input.location();
+					std::string filename = input.parse_to('"');
+					if (!(valid = input.consume('"')))
+					{
+						loc.report_error("Syntax error, expected '\"' to terminate /incbin/(");
+						return;
+					}
+					property_value v;
+					if (!(valid = input.read_binary_file(filename, v.byte_data)))
+					{
+						input.parse_error("Cannot open binary include file");
+						return;
+					}
+					if (!(valid &= input.consume(')')))
+					{
+						input.parse_error("Syntax error, expected ')' to terminate /incbin/(");
+						return;
+					}
+					values.push_back(v);
+					break;
+				}
 				unsigned long long bits = 0;
 				valid = input.consume("/bits/");
 				input.next_token();
