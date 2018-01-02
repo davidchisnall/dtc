@@ -904,7 +904,10 @@ class device_tree
 	 */
 	void sort()
 	{
-		root->sort();
+		if (root)
+		{
+			root->sort();
+		}
 	}
 	/**
 	 * Adds a path to search for include files.  The argument must be a
