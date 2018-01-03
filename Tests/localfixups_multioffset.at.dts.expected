@@ -4,11 +4,11 @@
 
 	quxnode {
 
-		qux = <0x1>;
+		qux = <0x1 0x1 0x3 0x2>;
 	};
-	quuxnode {
+	foo {
 
-		quux = <0x1 0x2 0x3 0x4 0xdeadbeef>;
+		phandle = <0x2>;
 	};
 	baz {
 
@@ -16,16 +16,14 @@
 	};
 	__symbols__ {
 
+		FOO = "/foo";
 		BAZ = "/baz";
-	};
-	__fixups__ {
-
-		FOO = "/quuxnode:quux:16";
 	};
 	__local_fixups__ {
 
 		quxnode {
-			quz = <0x0>;
+
+			qux = <0x0 0xc>;
 		};
 	};
 };
