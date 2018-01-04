@@ -368,7 +368,7 @@ class property
 	/**
 	 * Returns the key for this property.
 	 */
-	inline std::string get_key()
+	inline const std::string &get_key()
 	{
 		return key;
 	}
