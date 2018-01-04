@@ -25,7 +25,8 @@
 	__local_fixups__ {
 
 		quxnode {
-			quz = <0x0>;
+
+			qux = <0x0>;
 		};
 	};
 };

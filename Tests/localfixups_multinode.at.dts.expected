@@ -20,8 +20,8 @@
 	};
 	__symbols__ {
 
-		FOO = "/foo";
 		BAZ = "/baz";
+		FOO = "/foo";
 	};
 	__local_fixups__ {
 
