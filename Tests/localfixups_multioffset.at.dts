@@ -1,0 +1,10 @@
+/dts-v1/;
+/plugin/;
+
+/{
+   quxnode {
+      qux = <&BAZ 0x01 0x03 &FOO>;
+   };
+   FOO: foo { };
+   BAZ: baz { };
+};
