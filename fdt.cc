@@ -1279,11 +1279,16 @@ void
 device_tree::assign_phandles(node_ptr &n, uint32_t &next)
 {
 	if (!n->labels.empty())
+	{
 		assign_phandle(n.get(), next);
+	}
 
 	for (auto &c : n->child_nodes())
+	{
 		assign_phandles(c, next);
+	}
 }
+
 void
 device_tree::resolve_cross_references(uint32_t &phandle)
 {
@@ -1752,7 +1757,9 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	// tree. We'll do this before we resolve cross references, just to keep
 	// order semi-predictable and stable.
 	if (write_symbols)
+	{
 		assign_phandles(root, phandle);
+	}
 	resolve_cross_references(phandle);
 	if (write_symbols)
 	{
