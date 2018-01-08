@@ -1276,7 +1276,7 @@ device_tree::assign_phandle(node *n, uint32_t &phandle)
 }
 
 void
-device_tree::resolve_cross_references()
+device_tree::resolve_cross_references(uint32_t &phandle)
 {
 	for (auto *pv : cross_references)
 	{
@@ -1320,7 +1320,6 @@ device_tree::resolve_cross_references()
 	});
 	assert(sorted_phandles.size() == fixups.size());
 
-	uint32_t phandle = 1;
 	for (auto &i : sorted_phandles)
 	{
 		string target_name = i.get().val.string_data;
@@ -1402,43 +1401,7 @@ device_tree::resolve_cross_references()
 			}
 		}
 		// If there is an existing phandle, use it
-		property_ptr p = target->get_property("phandle");
-		if (p == 0)
-		{
-			p = target->get_property("linux,phandle");
-		}
-		if (p == 0)
-		{
-			// Otherwise insert a new phandle node
-			property_value v;
-			while (used_phandles.find(phandle) != used_phandles.end())
-			{
-				// Note that we only don't need to
-				// store this phandle in the set,
-				// because we are monotonically
-				// increasing the value of phandle and
-				// so will only ever revisit this value
-				// if we have used 2^32 phandles, at
-				// which point our blob won't fit in
-				// any 32-bit system and we've done
-				// something badly wrong elsewhere
-				// already.
-				phandle++;
-			}
-			push_big_endian(v.byte_data, phandle++);
-			if (phandle_node_name == BOTH || phandle_node_name == LINUX)
-			{
-				p.reset(new property("linux,phandle"));
-				p->add_value(v);
-				target->add_property(p);
-			}
-			if (phandle_node_name == BOTH || phandle_node_name == EPAPR)
-			{
-				p.reset(new property("phandle"));
-				p->add_value(v);
-				target->add_property(p);
-			}
-		}
+		property_ptr p = assign_phandle(target, phandle);
 		p->begin()->push_to_buffer(i.get().val.byte_data);
 		assert(i.get().val.byte_data.size() == 4);
 	}
@@ -1775,7 +1738,8 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		}
 	}
 	collect_names();
-	resolve_cross_references();
+	uint32_t phandle = 1;
+	resolve_cross_references(phandle);
 	if (write_symbols)
 	{
 		std::vector<property_ptr> symbols;

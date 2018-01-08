@@ -818,7 +818,7 @@ class device_tree
 	 * node must have their values replaced by either the node path or
 	 * phandle value.
 	 */
-	void resolve_cross_references();
+	void resolve_cross_references(uint32_t &phandle);
 	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has
