@@ -1276,6 +1276,15 @@ device_tree::assign_phandle(node *n, uint32_t &phandle)
 }
 
 void
+device_tree::assign_phandles(node_ptr &n, uint32_t &next)
+{
+	if (!n->labels.empty())
+		assign_phandle(n.get(), next);
+
+	for (auto &c : n->child_nodes())
+		assign_phandles(c, next);
+}
+void
 device_tree::resolve_cross_references(uint32_t &phandle)
 {
 	for (auto *pv : cross_references)
