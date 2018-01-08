@@ -800,6 +800,10 @@ class device_tree
 	 */
 	void collect_names_recursive(node_ptr &n, node_path &path);
 	/**
+	 * Assign a phandle property to a single node.
+	 */
+	property_ptr assign_phandle(node *n, uint32_t &next);
+	/**
 	 * Assign phandle properties to all nodes that have been referenced and
 	 * require one.  This method will recursively visit the tree starting at
 	 * the node that it is passed.
