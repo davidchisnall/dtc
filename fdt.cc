@@ -1748,6 +1748,11 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	}
 	collect_names();
 	uint32_t phandle = 1;
+	// If we're writing symbols, go ahead and assign phandles to the entire
+	// tree. We'll do this before we resolve cross references, just to keep
+	// order semi-predictable and stable.
+	if (write_symbols)
+		assign_phandles(root, phandle);
 	resolve_cross_references(phandle);
 	if (write_symbols)
 	{
