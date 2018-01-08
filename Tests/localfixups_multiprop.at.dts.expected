@@ -4,16 +4,16 @@
 
 	quxnode {
 
-		qux = <0x1>;
-		quux = <0x2>;
+		qux = <0x2>;
+		quux = <0x1>;
 	};
 	foo {
 
-		phandle = <0x2>;
+		phandle = <0x1>;
 	};
 	baz {
 
-		phandle = <0x1>;
+		phandle = <0x2>;
 	};
 	__symbols__ {
 

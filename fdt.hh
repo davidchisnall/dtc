@@ -800,6 +800,12 @@ class device_tree
 	 */
 	void collect_names_recursive(node_ptr &n, node_path &path);
 	/**
+	 * Assign a phandle property to a single node.  The next parameter
+	 * holds the phandle to be assigned, and will be incremented upon
+	 * assignment.
+	 */
+	property_ptr assign_phandle(node *n, uint32_t &next);
+	/**
 	 * Assign phandle properties to all nodes that have been referenced and
 	 * require one.  This method will recursively visit the tree starting at
 	 * the node that it is passed.
@@ -812,9 +818,11 @@ class device_tree
 	/**
 	 * Resolves all cross references.  Any properties that refer to another
 	 * node must have their values replaced by either the node path or
-	 * phandle value.
+	 * phandle value.  The phandle parameter holds the next phandle to be
+	 * assigned, should the need arise.  It will be incremented upon each
+	 * assignment of a phandle.
 	 */
-	void resolve_cross_references();
+	void resolve_cross_references(uint32_t &phandle);
 	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has
