@@ -1,0 +1,39 @@
+/dts-v1/;
+
+/  {
+
+	quxnode {
+
+		qux = <0x1>;
+	};
+	quuxnode {
+
+		quux = <0x1 0x2 0x3 0x4 0x2>;
+	};
+	baz {
+
+		phandle = <0x1>;
+	};
+	foo {
+
+		phandle = <0x2>;
+		bar {
+
+			phandle = <0x3>;
+		};
+		foobar {
+
+			foobarchild {
+
+				phandle = <0x4>;
+			};
+		};
+	};
+	__symbols__ {
+
+		FOOBARCHILD = "/foo/foobar/foobarchild";
+		BAR = "/foo/bar";
+		FOO = "/foo";
+		BAZ = "/baz";
+	};
+};

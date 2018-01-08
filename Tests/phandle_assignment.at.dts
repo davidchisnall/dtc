@@ -1,0 +1,18 @@
+/dts-v1/;
+
+/{
+   quxnode {
+      qux = <&BAZ>;
+   };
+   quuxnode {
+      quux = <1 2 3 4 &FOO>;
+   };
+
+   BAZ: baz { };
+   FOO: foo {
+      BAR: bar { };
+      foobar {
+         FOOBARCHILD: foobarchild { };
+      };
+   };
+};
