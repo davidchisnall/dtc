@@ -1814,6 +1814,12 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 				string name = node->name;
 				if (name == string())
 				{
+					if (is_plugin)
+					{
+						// Re-assign any fragment numbers based on a delta of
+						// fragnum before we merge it
+						reassign_fragment_numbers(node, fragnum);
+					}
 					root->merge_node(std::move(node));
 				}
 				else
