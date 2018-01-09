@@ -16,7 +16,7 @@ set_property(TARGET dtc PROPERTY CXX_STANDARD 11)
 
 option(ENABLE_TESTS "Enable the tests")
 
-if(ENABLE_TESTS)
+if(ENABLE_TESTS OR CMAKE_BUILD_TYPE MATCHES Debug)
 	enable_testing()
 	add_subdirectory("Tests")
 endif()
