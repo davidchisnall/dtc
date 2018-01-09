@@ -1,0 +1,5 @@
+/dts-v1/;
+
+/ {
+	data = [01 02], /incbin/("/tmp/bsdtc_test_bytes"),  [ff fe];
+};
