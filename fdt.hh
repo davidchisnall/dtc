@@ -882,6 +882,14 @@ class device_tree
 	 * fragnumas its fragment number, and fragment number will be incremented.
 	 */
 	node_ptr create_fragment_wrapper(node_ptr &node, int &fragnum);
+	/**
+	 * Generate a root node from the node passed in.  This is sensitive to
+	 * whether we're in a plugin context or not, so that if we're in a plugin we
+	 * can circumvent any errors that might normally arise from a non-/ root.
+	 * fragnum will be assigned to any fragment wrapper generated as a result
+	 * of the call, and fragnum will be incremented.
+	 */
+	node_ptr generate_root(node_ptr &node, int &fragnum);
 	/*
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains device tree source.

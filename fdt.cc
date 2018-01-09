@@ -1718,6 +1718,23 @@ device_tree::create_fragment_wrapper(node_ptr &node, int &fragnum)
 	return newroot;
 }
 
+node_ptr
+device_tree::generate_root(node_ptr &node, int &fragnum)
+{
+
+	string name = node->name;
+	if (name == string())
+	{
+		return std::move(node);
+	}
+	else if (!is_plugin)
+	{
+		return NULL;
+	}
+
+	return create_fragment_wrapper(node, fragnum);
+}
+
 void
 device_tree::parse_dts(const string &fn, FILE *depfile)
 {
@@ -1739,6 +1756,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	                        dirname(fn),
 	                        depfile);
 	bool read_header = false;
+	int fragnum = 0;
 	parse_file(input, roots, read_header);
 	switch (roots.size())
 	{
@@ -1747,11 +1765,23 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 			input.parse_error("Failed to find root node /.");
 			return;
 		case 1:
-			root = std::move(roots[0]);
+			root = generate_root(roots[0], fragnum);
+			if (!root)
+			{
+				valid = false;
+				input.parse_error("Failed to find root node /.");
+				return;
+			}
 			break;
 		default:
 		{
-			root = std::move(roots[0]);
+			root = generate_root(roots[0], fragnum);
+			if (!root)
+			{
+				valid = false;
+				input.parse_error("Failed to find root node /.");
+				return;
+			}
 			for (auto i=++(roots.begin()), e=roots.end() ; i!=e ; ++i)
 			{
 				auto &node = *i;
