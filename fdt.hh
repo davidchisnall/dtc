@@ -876,6 +876,13 @@ class device_tree
 	 */
 	void parse_dtb(const std::string &fn, FILE *depfile);
 	/**
+	 * Construct a fragment wrapper around node.  This will assume that node's
+	 * name may be used as the target of the fragment, and the contents are to
+	 * be wrapped in an __overlay__ node.  The fragment wrapper will be assigned
+	 * fragnumas its fragment number, and fragment number will be incremented.
+	 */
+	node_ptr create_fragment_wrapper(node_ptr &node, int &fragnum);
+	/*
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains device tree source.
 	 */

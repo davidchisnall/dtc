@@ -1689,6 +1689,35 @@ device_tree::node_path::to_string() const
 	return path;
 }
 
+node_ptr
+device_tree::create_fragment_wrapper(node_ptr &node, int &fragnum)
+{
+	// In a plugin, we can massage these non-/ root nodes into into a fragment
+	std::string fragment_address = "fragment@" + std::to_string(fragnum);
+	++fragnum;
+
+	std::vector<property_ptr> symbols;
+
+	node_ptr newroot = node::create_special_node("", symbols);
+	node_ptr wrapper = node::create_special_node("__overlay__", symbols);
+
+	// Generate the fragment with target = <&name>
+	property_value v;
+	v.string_data = node->name;
+	v.type = property_value::PHANDLE;
+	string name = "target";
+	auto prop = std::make_shared<property>(std::move(name));
+	prop->add_value(v);
+	symbols.push_back(prop);
+
+	node_ptr fragment = node::create_special_node(fragment_address, symbols);
+
+	wrapper->merge_node(std::move(node));
+	fragment->add_child(std::move(wrapper));
+	newroot->add_child(std::move(fragment));
+	return newroot;
+}
+
 void
 device_tree::parse_dts(const string &fn, FILE *depfile)
 {
