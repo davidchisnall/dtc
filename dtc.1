@@ -313,6 +313,33 @@ will write the device tree source for the device tree blob
 .Pa device.dtb
 to the standard output.
 This is useful when debugging device trees.
+.Pp
+The command:
+.Pp
+.Dl "dtc -@ -O dtb -I dts -o device.dtb device.dts"
+.Pp
+will generate a
+.Pa device.dtb
+file from the device tree source
+.Pa device.dts
+with a __symbols__ node included so that overlays may be applied to it.
+.Pp
+The command:
+.Pp
+.Dl "dtc -@ -O dtb -I dts -o device_overlay.dtbo device_overlay.dts"
+.Pp
+will generate a
+.Pa device_overlay.dtbo
+file, using the standard extension for a device tree overlay, from the device
+tree source
+.Pa device_overlay.dts .
+A __symbols__ node will be included so that overlays may be applied to it.
+The presence of a
+.Va /plugin/;
+directive in
+.Pa device_overlay.dts
+will indicate to the utility that it should also generate the underlying
+metadata required in overlays.
 .Sh COMPATIBILITY
 This utility is intended to be compatible with the device tree compiler
 provided by elinux.org.
