@@ -1800,7 +1800,14 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					}
 					if (existing == node_names.end())
 					{
-						fprintf(stderr, "Unable to merge node: %s\n", name.c_str());
+						if (is_plugin)
+						{
+							root->merge_node(create_fragment_wrapper(node, fragnum));
+						}
+						else
+						{
+							fprintf(stderr, "Unable to merge node: %s\n", name.c_str());
+						}
 					}
 					else
 					{
