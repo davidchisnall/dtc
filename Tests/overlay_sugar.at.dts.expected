@@ -1,0 +1,53 @@
+/dts-v1/;
+
+/  {
+
+	fragment@0 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			foo,status = "okay";
+		};
+	};
+	fragment@1 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			bar,status = "okay";
+		};
+	};
+	fragment@2 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			qux,status = "okay";
+		};
+	};
+	fragment@3 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			baz,status = "okay";
+			foobar {
+
+				foobar,status = "okay";
+				phandle = <0x1>;
+			};
+		};
+	};
+	__symbols__ {
+
+		foobar = "/fragment@3/__overlay__/foobar";
+	};
+	__fixups__ {
+
+		foo = "/fragment@0:target:0";
+		bar = "/fragment@1:target:0";
+		qux = "/fragment@2:target:0";
+		baz = "/fragment@3:target:0";
+	};
+};
