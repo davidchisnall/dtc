@@ -1736,6 +1736,32 @@ device_tree::generate_root(node_ptr &node, int &fragnum)
 }
 
 void
+device_tree::reassign_fragment_numbers(node_ptr &node, int &delta)
+{
+
+	for (auto &c : node->child_nodes())
+	{
+		int current_address;
+		try
+		{
+			current_address = std::stoi(c->unit_address);
+		}
+		catch (std::exception &exc)
+		{
+			// Just default to 0; we'll add our delta and increment it, and all
+			// will be fine.  Fragment addresses aren't necessarily supposed to
+			// mean anything, we just strive to maintain some sanity.
+			current_address = 0;
+		}
+		current_address += delta;
+		// It's possible that we hopped more than one somewhere, so just reset
+		// delta to the next in sequence.
+		delta = current_address + 1;
+		c->unit_address = std::to_string(current_address);
+	}
+}
+
+void
 device_tree::parse_dts(const string &fn, FILE *depfile)
 {
 	auto in = input_buffer::buffer_for_file(fn);

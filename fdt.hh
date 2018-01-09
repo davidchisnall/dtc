@@ -890,6 +890,11 @@ class device_tree
 	 * of the call, and fragnum will be incremented.
 	 */
 	node_ptr generate_root(node_ptr &node, int &fragnum);
+	/**
+	 * Reassign any fragment numbers from this new node, based on the given
+	 * delta.
+	 */
+	void reassign_fragment_numbers(node_ptr &node, int &delta);
 	/*
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains device tree source.
