@@ -254,9 +254,22 @@ text_input_buffer::handle_include()
 
 bool text_input_buffer::read_binary_file(const std::string &filename, byte_buffer &b)
 {
-	string include_file = dir + '/' + filename;
+	bool try_include_paths = true;
+	string include_file;
+	if (filename[0] == '/')
+	{
+		include_file = filename;
+		// Don't try include paths if we're given an absolute path.
+		// Failing is better so that we don't accidentally do the wrong thing,
+		// but make it seem like everything is alright.
+		try_include_paths = false;
+	}
+	else
+	{
+		include_file = dir + '/' + filename;
+	}
 	auto include_buffer = input_buffer::buffer_for_file(include_file, false);
-	if (include_buffer == 0)
+	if (include_buffer == 0 && try_include_paths)
 	{
 		for (auto i : include_paths)
 		{
