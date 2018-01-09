@@ -10,4 +10,17 @@ if [ `basename -s .at.dts "$BASE"` != "$BASE" ] ; then
 	AT=-@
 fi
 
+TESTDIR=`dirname "$2"`
+DOCOPY_TEST="incbin_absolute.dts"
+DOCOPY_FROM=${TESTDIR}/bytes
+DOCOPY_TO=/tmp/bsdtc_test_bytes
+
+if [ `basename ${2}` == "${DOCOPY_TEST}" ] ; then
+	cp ${DOCOPY_FROM} ${DOCOPY_TO}
+fi
+
 "$1" $AT -I dts -O dts "$2" | diff "${2}.expected" -
+
+if [ `basename ${2}` == "${DOCOPY_TEST}" ] ; then
+	rm ${DOCOPY_TO}
+fi
