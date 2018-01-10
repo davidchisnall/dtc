@@ -1741,7 +1741,7 @@ device_tree::reassign_fragment_numbers(node_ptr &node, int &delta)
 
 	for (auto &c : node->child_nodes())
 	{
-		int current_address = std::stoi(c->unit_address, NULL, 16);
+		int current_address = std::stoi(c->unit_address, nullptr, 16);
 		std::ostringstream new_address;
 		current_address += delta;
 		// It's possible that we hopped more than one somewhere, so just reset
