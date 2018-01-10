@@ -1698,6 +1698,7 @@ device_tree::create_fragment_wrapper(node_ptr &node, int &fragnum)
 
 	std::vector<property_ptr> symbols;
 
+	// Intentionally left empty
 	node_ptr newroot = node::create_special_node("", symbols);
 	node_ptr wrapper = node::create_special_node("__overlay__", symbols);
 
@@ -1705,8 +1706,7 @@ device_tree::create_fragment_wrapper(node_ptr &node, int &fragnum)
 	property_value v;
 	v.string_data = node->name;
 	v.type = property_value::PHANDLE;
-	string name = "target";
-	auto prop = std::make_shared<property>(std::move(name));
+	auto prop = std::make_shared<property>(std::string("target"));
 	prop->add_value(v);
 	symbols.push_back(prop);
 
@@ -1729,7 +1729,7 @@ device_tree::generate_root(node_ptr &node, int &fragnum)
 	}
 	else if (!is_plugin)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	return create_fragment_wrapper(node, fragnum);
@@ -1741,23 +1741,14 @@ device_tree::reassign_fragment_numbers(node_ptr &node, int &delta)
 
 	for (auto &c : node->child_nodes())
 	{
-		int current_address;
-		try
-		{
-			current_address = std::stoi(c->unit_address);
-		}
-		catch (std::exception &exc)
-		{
-			// Just default to 0; we'll add our delta and increment it, and all
-			// will be fine.  Fragment addresses aren't necessarily supposed to
-			// mean anything, we just strive to maintain some sanity.
-			current_address = 0;
-		}
+		int current_address = std::stoi(c->unit_address, NULL, 16);
+		std::ostringstream new_address;
 		current_address += delta;
 		// It's possible that we hopped more than one somewhere, so just reset
 		// delta to the next in sequence.
 		delta = current_address + 1;
-		c->unit_address = std::to_string(current_address);
+		new_address << std::hex << current_address;
+		c->unit_address = new_address.str();
 	}
 }
 
