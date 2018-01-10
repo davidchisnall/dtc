@@ -1022,7 +1022,7 @@ node::get_property(const string &key)
 }
 
 void
-node::merge_node(node_ptr other)
+node::merge_node(node_ptr &other)
 {
 	for (auto &l : other->labels)
 	{
@@ -1057,7 +1057,7 @@ node::merge_node(node_ptr other)
 		{
 			if (i->name == c->name && i->unit_address == c->unit_address)
 			{
-				i->merge_node(std::move(c));
+				i->merge_node(c);
 				found = true;
 				break;
 			}
@@ -1712,7 +1712,7 @@ device_tree::create_fragment_wrapper(node_ptr &node, int &fragnum)
 
 	node_ptr fragment = node::create_special_node(fragment_address, symbols);
 
-	wrapper->merge_node(std::move(node));
+	wrapper->merge_node(node);
 	fragment->add_child(std::move(wrapper));
 	newroot->add_child(std::move(fragment));
 	return newroot;
@@ -1811,7 +1811,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 						// fragnum before we merge it
 						reassign_fragment_numbers(node, fragnum);
 					}
-					root->merge_node(std::move(node));
+					root->merge_node(node);
 				}
 				else
 				{
@@ -1825,7 +1825,8 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					{
 						if (is_plugin)
 						{
-							root->merge_node(create_fragment_wrapper(node, fragnum));
+							auto fragment = create_fragment_wrapper(node, fragnum);
+							root->merge_node(fragment);
 						}
 						else
 						{
@@ -1834,7 +1835,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					}
 					else
 					{
-						existing->second->merge_node(std::move(node));
+						existing->second->merge_node(node);
 					}
 				}
 			}
