@@ -620,7 +620,7 @@ class node
 	 * Merges a node into this one.  Any properties present in both are
 	 * overridden, any properties present in only one are preserved.
 	 */
-	void merge_node(node_ptr other);
+	void merge_node(node_ptr &other);
 	/**
 	 * Write this node to the specified output.  Although nodes do not
 	 * refer to a string table directly, their properties do.  The string
@@ -876,6 +876,26 @@ class device_tree
 	 */
 	void parse_dtb(const std::string &fn, FILE *depfile);
 	/**
+	 * Construct a fragment wrapper around node.  This will assume that node's
+	 * name may be used as the target of the fragment, and the contents are to
+	 * be wrapped in an __overlay__ node.  The fragment wrapper will be assigned
+	 * fragnumas its fragment number, and fragment number will be incremented.
+	 */
+	node_ptr create_fragment_wrapper(node_ptr &node, int &fragnum);
+	/**
+	 * Generate a root node from the node passed in.  This is sensitive to
+	 * whether we're in a plugin context or not, so that if we're in a plugin we
+	 * can circumvent any errors that might normally arise from a non-/ root.
+	 * fragnum will be assigned to any fragment wrapper generated as a result
+	 * of the call, and fragnum will be incremented.
+	 */
+	node_ptr generate_root(node_ptr &node, int &fragnum);
+	/**
+	 * Reassign any fragment numbers from this new node, based on the given
+	 * delta.
+	 */
+	void reassign_fragment_numbers(node_ptr &node, int &delta);
+	/*
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains device tree source.
 	 */

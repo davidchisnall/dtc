@@ -1022,7 +1022,7 @@ node::get_property(const string &key)
 }
 
 void
-node::merge_node(node_ptr other)
+node::merge_node(node_ptr &other)
 {
 	for (auto &l : other->labels)
 	{
@@ -1057,7 +1057,7 @@ node::merge_node(node_ptr other)
 		{
 			if (i->name == c->name && i->unit_address == c->unit_address)
 			{
-				i->merge_node(std::move(c));
+				i->merge_node(c);
 				found = true;
 				break;
 			}
@@ -1689,6 +1689,69 @@ device_tree::node_path::to_string() const
 	return path;
 }
 
+node_ptr
+device_tree::create_fragment_wrapper(node_ptr &node, int &fragnum)
+{
+	// In a plugin, we can massage these non-/ root nodes into into a fragment
+	std::string fragment_address = "fragment@" + std::to_string(fragnum);
+	++fragnum;
+
+	std::vector<property_ptr> symbols;
+
+	// Intentionally left empty
+	node_ptr newroot = node::create_special_node("", symbols);
+	node_ptr wrapper = node::create_special_node("__overlay__", symbols);
+
+	// Generate the fragment with target = <&name>
+	property_value v;
+	v.string_data = node->name;
+	v.type = property_value::PHANDLE;
+	auto prop = std::make_shared<property>(std::string("target"));
+	prop->add_value(v);
+	symbols.push_back(prop);
+
+	node_ptr fragment = node::create_special_node(fragment_address, symbols);
+
+	wrapper->merge_node(node);
+	fragment->add_child(std::move(wrapper));
+	newroot->add_child(std::move(fragment));
+	return newroot;
+}
+
+node_ptr
+device_tree::generate_root(node_ptr &node, int &fragnum)
+{
+
+	string name = node->name;
+	if (name == string())
+	{
+		return std::move(node);
+	}
+	else if (!is_plugin)
+	{
+		return nullptr;
+	}
+
+	return create_fragment_wrapper(node, fragnum);
+}
+
+void
+device_tree::reassign_fragment_numbers(node_ptr &node, int &delta)
+{
+
+	for (auto &c : node->child_nodes())
+	{
+		int current_address = std::stoi(c->unit_address, nullptr, 16);
+		std::ostringstream new_address;
+		current_address += delta;
+		// It's possible that we hopped more than one somewhere, so just reset
+		// delta to the next in sequence.
+		delta = current_address + 1;
+		new_address << std::hex << current_address;
+		c->unit_address = new_address.str();
+	}
+}
+
 void
 device_tree::parse_dts(const string &fn, FILE *depfile)
 {
@@ -1710,6 +1773,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	                        dirname(fn),
 	                        depfile);
 	bool read_header = false;
+	int fragnum = 0;
 	parse_file(input, roots, read_header);
 	switch (roots.size())
 	{
@@ -1718,18 +1782,36 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 			input.parse_error("Failed to find root node /.");
 			return;
 		case 1:
-			root = std::move(roots[0]);
+			root = generate_root(roots[0], fragnum);
+			if (!root)
+			{
+				valid = false;
+				input.parse_error("Failed to find root node /.");
+				return;
+			}
 			break;
 		default:
 		{
-			root = std::move(roots[0]);
+			root = generate_root(roots[0], fragnum);
+			if (!root)
+			{
+				valid = false;
+				input.parse_error("Failed to find root node /.");
+				return;
+			}
 			for (auto i=++(roots.begin()), e=roots.end() ; i!=e ; ++i)
 			{
 				auto &node = *i;
 				string name = node->name;
 				if (name == string())
 				{
-					root->merge_node(std::move(node));
+					if (is_plugin)
+					{
+						// Re-assign any fragment numbers based on a delta of
+						// fragnum before we merge it
+						reassign_fragment_numbers(node, fragnum);
+					}
+					root->merge_node(node);
 				}
 				else
 				{
@@ -1741,11 +1823,19 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					}
 					if (existing == node_names.end())
 					{
-						fprintf(stderr, "Unable to merge node: %s\n", name.c_str());
+						if (is_plugin)
+						{
+							auto fragment = create_fragment_wrapper(node, fragnum);
+							root->merge_node(fragment);
+						}
+						else
+						{
+							fprintf(stderr, "Unable to merge node: %s\n", name.c_str());
+						}
 					}
 					else
 					{
-						existing->second->merge_node(std::move(node));
+						existing->second->merge_node(node);
 					}
 				}
 			}
