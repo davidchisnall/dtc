@@ -52,18 +52,18 @@ using std::string;
 /**
  * The current major version of the tool.
  */
-int version_major = 0;
-int version_major_compatible = 1;
+static int version_major = 0;
+static int version_major_compatible = 1;
 /**
  * The current minor version of the tool.
  */
-int version_minor = 5;
-int version_minor_compatible = 4;
+static int version_minor = 5;
+static int version_minor_compatible = 4;
 /**
  * The current patch level of the tool.
  */
-int version_patch = 0;
-int version_patch_compatible = 0;
+static int version_patch = 0;
+static int version_patch_compatible = 0;
 
 static void usage(const string &argv0)
 {
