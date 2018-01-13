@@ -676,12 +676,12 @@ class device_tree
 	/**
 	 * The format that we should use for writing phandles.
 	 */
-	phandle_format phandle_node_name;
+	phandle_format phandle_node_name = EPAPR;
 	/**
 	 * Flag indicating that this tree is valid.  This will be set to false
 	 * on parse errors. 
 	 */
-	bool valid;
+	bool valid = true;
 	/**
 	 * Type used for memory reservations.  A reservation is two 64-bit
 	 * values indicating a base address and length in memory that the
@@ -775,23 +775,23 @@ class device_tree
 	/**
 	 * The default boot CPU, specified in the device tree header.
 	 */
-	uint32_t boot_cpu;
+	uint32_t boot_cpu = 0;
 	/**
 	 * The number of empty reserve map entries to generate in the blob.
 	 */
-	uint32_t spare_reserve_map_entries;
+	uint32_t spare_reserve_map_entries = 0;
 	/**
 	 * The minimum size in bytes of the blob.
 	 */
-	uint32_t minimum_blob_size;
+	uint32_t minimum_blob_size = 0;
 	/**
 	 * The number of bytes of padding to add to the end of the blob.
 	 */
-	uint32_t blob_padding;
+	uint32_t blob_padding = 0;
 	/**
 	 * Is this tree a plugin?
 	 */
-	bool is_plugin;
+	bool is_plugin = false;
 	/**
 	 * Visit all of the nodes recursively, and if they have labels then add
 	 * them to the node_paths and node_names vectors so that they can be
@@ -867,9 +867,7 @@ class device_tree
 	/**
 	 * Default constructor.  Creates a valid, but empty FDT.
 	 */
-	device_tree() : phandle_node_name(EPAPR), valid(true),
-		boot_cpu(0), spare_reserve_map_entries(0),
-		minimum_blob_size(0), blob_padding(0), is_plugin(false) {}
+	device_tree() {}
 	/**
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains a device tree blob.
