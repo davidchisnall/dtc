@@ -21,6 +21,10 @@ fi
 
 "$1" $AT -I dts -O dts "$2" | diff "${2}.expected" -
 
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
 if [ `basename ${2}` == "${DOCOPY_TEST}" ] ; then
 	rm ${DOCOPY_TO}
 fi
