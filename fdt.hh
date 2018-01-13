@@ -869,7 +869,7 @@ class device_tree
 	 */
 	device_tree() : phandle_node_name(EPAPR), valid(true),
 		boot_cpu(0), spare_reserve_map_entries(0),
-		minimum_blob_size(0), blob_padding(0) {}
+		minimum_blob_size(0), blob_padding(0), is_plugin(false) {}
 	/**
 	 * Constructs a device tree from the specified file name, referring to
 	 * a file that contains a device tree blob.

@@ -1741,14 +1741,17 @@ device_tree::reassign_fragment_numbers(node_ptr &node, int &delta)
 
 	for (auto &c : node->child_nodes())
 	{
-		int current_address = std::stoi(c->unit_address, nullptr, 16);
-		std::ostringstream new_address;
-		current_address += delta;
-		// It's possible that we hopped more than one somewhere, so just reset
-		// delta to the next in sequence.
-		delta = current_address + 1;
-		new_address << std::hex << current_address;
-		c->unit_address = new_address.str();
+		if (c->name == std::string("fragment"))
+		{
+			int current_address = std::stoi(c->unit_address, nullptr, 16);
+			std::ostringstream new_address;
+			current_address += delta;
+			// It's possible that we hopped more than one somewhere, so just reset
+			// delta to the next in sequence.
+			delta = current_address + 1;
+			new_address << std::hex << current_address;
+			c->unit_address = new_address.str();
+		}
 	}
 }
 
