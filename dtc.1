@@ -30,7 +30,7 @@
 .\"
 .\" $FreeBSD$
 .\"/
-.Dd January 9, 2018
+.Dd January 17, 2018
 .Dt DTC 1
 .Os
 .Sh NAME
@@ -57,7 +57,7 @@
 The
 .Nm
 utility converts flattened device tree (FDT) representations.
- It is most commonly used to generate device tree blobs (DTB), the binary
+It is most commonly used to generate device tree blobs (DTB), the binary
 representation of an FDT, from device tree sources (DTS), the ASCII text source
 representation.
 .Pp
@@ -153,9 +153,9 @@ format for property values.
 These allow property value to be specified on the command line.
 .It Fl R Ar entries
 The number of empty reservation table entries to pad the table with.
-This is
-useful if you are generating a device tree blob for bootloader or similar that
-needs to reserve some memory before passing control to the operating system.
+This is useful if you are generating a device tree blob for bootloader or
+similar that needs to reserve some memory before passing control to the
+operating system.
 .It Fl S Ar bytes
 The minimum size in bytes of the blob.
 The blob will be padded after the strings table to ensure that it is the
@@ -302,8 +302,7 @@ will generate a
 file from the device tree source
 .Pa device.dts
 and print errors if any occur during parsing or property checking.
-The
-resulting file can be assembled and linked into a binary.
+The resulting file can be assembled and linked into a binary.
 .Pp
 The command:
 .Pp
