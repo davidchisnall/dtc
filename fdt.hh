@@ -418,6 +418,11 @@ class node
 	 */
 	std::string unit_address;
 	/**
+	 * A flag indicating that this node should be deleted later if it is not
+	 * referenced in the final tree.
+	 */
+	bool delete_if_unreferenced = false;
+	/**
 	 * The type for the property vector.
 	 */
 	typedef std::vector<property_ptr> property_vector;

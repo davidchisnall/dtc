@@ -862,6 +862,9 @@ node::node(text_input_buffer &input,
 		// flag set if we find any characters that are only in
 		// the property name character set, not the node 
 		bool is_property = false;
+		// flag set if our node is marked as /delete-if-unreferenced/ to be
+		// garbage collected later if nothing references it
+		bool delete_if_unreferenced = false;
 		string child_name, child_address;
 		std::unordered_set<string> child_labels;
 		auto parse_delete = [&](const char *expected, bool at)
@@ -908,6 +911,11 @@ node::node(text_input_buffer &input,
 			}
 			continue;
 		}
+		if (input.consume("/delete-if-unreferenced/"))
+		{
+			input.next_token();
+			delete_if_unreferenced = true;
+		}
 		child_name = parse_name(input, is_property,
 				"Expected property or node name");
 		while (input.consume(':'))
@@ -947,6 +955,7 @@ node::node(text_input_buffer &input,
 					std::move(child_labels), std::move(child_address), defines);
 			if (child)
 			{
+				child->delete_if_unreferenced = delete_if_unreferenced;
 				children.push_back(std::move(child));
 			}
 			else
