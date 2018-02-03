@@ -622,6 +622,16 @@ class node
 		children.push_back(std::move(n));
 	}
 	/**
+	 * Deletes a child from this node.
+	 */
+	inline void delete_child(node_ptr &n)
+	{
+		children.erase(std::remove_if(children.begin(), children.end(),
+				[&](const node_ptr &p) {
+					return (p == n);
+				}), children.end());
+	}
+	/**
 	 * Merges a node into this one.  Any properties present in both are
 	 * overridden, any properties present in only one are preserved.
 	 */
