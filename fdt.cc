@@ -1889,6 +1889,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		assign_phandles(root, phandle);
 	}
 	resolve_cross_references(phandle);
+	garbage_collect_marked_nodes(root, nullptr);
 	if (write_symbols)
 	{
 		std::vector<property_ptr> symbols;
