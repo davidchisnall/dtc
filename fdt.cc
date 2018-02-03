@@ -1443,10 +1443,36 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 				return;
 			}
 		}
+		// Track referenced nodes for later garbage collection
+		referenced_nodes.push_back(target);
 		// If there is an existing phandle, use it
 		property_ptr p = assign_phandle(target, phandle);
 		p->begin()->push_to_buffer(i.get().val.byte_data);
 		assert(i.get().val.byte_data.size() == 4);
+	}
+}
+
+void
+device_tree::garbage_collect_marked_nodes(node_ptr &n, node *parent)
+{
+	bool deleted = false;
+	if (n->delete_if_unreferenced)
+	{
+		auto i = std::find(referenced_nodes.begin(), referenced_nodes.end(),
+			n.get());
+		if (i == referenced_nodes.end())
+		{
+			parent->delete_child(n);
+			// No point in checking its children; it has been deleted.
+			return;
+		}
+	}
+	for (auto &c : n->child_nodes())
+	{
+		if (c)
+		{
+			garbage_collect_marked_nodes(c, n.get());
+		}
 	}
 }
 
