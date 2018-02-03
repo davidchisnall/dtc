@@ -1455,7 +1455,6 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 void
 device_tree::garbage_collect_marked_nodes(node_ptr &n, node *parent)
 {
-	bool deleted = false;
 	if (n->delete_if_unreferenced)
 	{
 		auto i = std::find(referenced_nodes.begin(), referenced_nodes.end(),
