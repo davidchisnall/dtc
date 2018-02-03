@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/ {
+	/delete-if-unreferenced/ qux0: qux@0 { };
+	/delete-if-unreferenced/ qux1: qux@1 { };
+	/delete-if-unreferenced/ qux@2 { };
+	qux@3 { };
+
+	quux@0 {
+		test-property = <&qux1>;
+	};
+};
