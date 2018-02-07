@@ -635,9 +635,12 @@ class node
 	 */
 	void write_dts(FILE *file, int indent);
 	/**
-	 * Recursively visit this node and then its children.
+	 * Recursively visit this node and then its children based on the
+	 * callable's return value.  The callable returning true will cause
+	 * visit to proceed with the recursion, while returning false will halt
+	 * before recursing.  parent will be passed to the callable.
 	 */
-	void visit(std::function<void(node&)>);
+	void visit(std::function<bool(node&, node*)>, node *parent);
 };
 
 /**

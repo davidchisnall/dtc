@@ -728,12 +728,13 @@ node::parse_name(text_input_buffer &input, bool &is_property, const char *error)
 }
 
 void
-node::visit(std::function<void(node&)> fn)
+node::visit(std::function<bool(node&, node*)> fn, node *parent)
 {
-	fn(*this);
+	if (!fn(*this, parent))
+		return;
 	for (auto &&c : children)
 	{
-		c->visit(fn);
+		c->visit(fn, this);
 	}
 }
 
@@ -1319,7 +1320,7 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 		phandle_set.insert({&i.val, i});
 	}
 	std::vector<std::reference_wrapper<fixup>> sorted_phandles;
-	root->visit([&](node &n) {
+	root->visit([&](node &n, node *parent) {
 		for (auto &p : n.properties())
 		{
 			for (auto &v : *p)
@@ -1331,7 +1332,9 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 				}
 			}
 		}
-	});
+		// Allow recursion
+		return true;
+	}, nullptr);
 	assert(sorted_phandles.size() == fixups.size());
 
 	for (auto &i : sorted_phandles)
