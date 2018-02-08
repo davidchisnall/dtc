@@ -426,8 +426,19 @@ class node
 	 */
 	enum visit_behavior
 	{
+		/**
+		 * Recurse as normal through the rest of the tree.
+		 */
 		VISIT_RECURSE,
+		/**
+		 * Continue recursing through the device tree, but do not
+		 * recurse through this branch of the tree any further.  Starts
+		 * visiting again at the sibling of this node's grandfather.
+		 */
 		VISIT_CONTINUE,
+		/**
+		 * Immediately halt the visit.  No further nodes will be visited.
+		 */
 		VISIT_BREAK
 	};
 	private:
