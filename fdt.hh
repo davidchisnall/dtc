@@ -432,8 +432,7 @@ class node
 		VISIT_RECURSE,
 		/**
 		 * Continue recursing through the device tree, but do not
-		 * recurse through this branch of the tree any further.  Starts
-		 * visiting again at the sibling of this node's grandfather.
+		 * recurse through this branch of the tree any further.
 		 */
 		VISIT_CONTINUE,
 		/**
