@@ -1362,7 +1362,8 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 		return node::VISIT_RECURSE;
 	}, nullptr);
 	assert(sorted_phandles.size() == fixups.size());
-
+	// Keep track of referenced nodes for later garbage collection
+	std::unordered_map<node*, int> referenced_nodes;
 	for (auto &i : sorted_phandles)
 	{
 		string target_name = i.get().val.string_data;
@@ -1444,14 +1445,48 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 			}
 		}
 		// Track referenced nodes for later garbage collection
-		referenced_nodes.push_back(target);
+		if (referenced_nodes.find(target) != referenced_nodes.end())
+		{
+			referenced_nodes[target]++;
+		}
+		else
+		{
+			referenced_nodes[target] = 1;
+		}
 		// If there is an existing phandle, use it
 		property_ptr p = assign_phandle(target, phandle);
 		p->begin()->push_to_buffer(i.get().val.byte_data);
 		assert(i.get().val.byte_data.size() == 4);
 	}
-}
+	// Begin garbage collection
+	int nodes_removed = 0;
+	do {
+		// Map a node for deletion to its parent for later deletion
+		std::map<node *, node *> garbage_nodes;
+		root->visit([&](node &n, node *parent) {
+			if (n.delete_if_unreferenced)
+			{
+				// Are we referenced?
+				if (referenced_nodes.find(&n) == referenced_nodes.end() ||
+				    referenced_nodes[&n] == 0)
+				{
+					garbage_nodes[&n] = parent;
+					// Continue recursion after this node
+					return node::VISIT_CONTINUE;
+				}
+			}
+			// Recurse as normal
+			return node::VISIT_RECURSE;
+		}, nullptr);
+		nodes_removed = garbage_nodes.size();
+		for (auto iter : garbage_nodes)
+		{
+			node *parent = iter.second;
 
+		}
+	} while (nodes_removed > 0);
+}
+/*
 void
 device_tree::garbage_collect_marked_nodes(node_ptr &n, node *parent)
 {
@@ -1474,7 +1509,7 @@ device_tree::garbage_collect_marked_nodes(node_ptr &n, node *parent)
 		}
 	}
 }
-
+*/
 
 void
 device_tree::parse_file(text_input_buffer &input,
@@ -1933,7 +1968,6 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		assign_phandles(root, phandle);
 	}
 	resolve_cross_references(phandle);
-	garbage_collect_marked_nodes(root, nullptr);
 	if (write_symbols)
 	{
 		std::vector<property_ptr> symbols;

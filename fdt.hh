@@ -756,12 +756,6 @@ class device_tree
 	 */
 	std::vector<property_value*> cross_references;
 	/**
-	 * A collection of nodes that are referenced in this device tree.
-	 * These are later checked when we walk the tree to remove any nodes that
-	 * are marked for deletion if they're later found to be unreferenced.
-	 */
-	std::vector<node*> referenced_nodes;
-	/**
 	 * The location of something requiring a fixup entry.
 	 */
 	struct fixup
@@ -868,17 +862,10 @@ class device_tree
 	 * node must have their values replaced by either the node path or
 	 * phandle value.  The phandle parameter holds the next phandle to be
 	 * assigned, should the need arise.  It will be incremented upon each
-	 * assignment of a phandle.
+	 * assignment of a phandle.  Garbage collection of unreferenced nodes
+	 * marked for "delete if unreferenced" will also occur here.
 	 */
 	void resolve_cross_references(uint32_t &phandle);
-	/**
-	 * Garbage collect all unreferenced nodes that are marked for deletion if
-	 * they are unreferenced.  The tree will be recursively searched, starting
-	 * at the root n, for nodes that are marked for deletion if they are
-	 * unreferenced.  parent is used to track where in the tree the node being
-	 * checked exists, so that it can be deleted if needed.
-	 */
-	void garbage_collect_marked_nodes(node_ptr &n, node *parent);
 	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has
