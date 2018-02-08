@@ -421,6 +421,15 @@ class node
 	 * Iterator type for child nodes.
 	 */
 	typedef std::vector<node_ptr>::iterator child_iterator;
+	/**
+	 * Recursion behavior to be observed for visiting
+	 */
+	enum visit_behavior
+	{
+		VISIT_RECURSE,
+		VISIT_CONTINUE,
+		VISIT_BREAK
+	};
 	private:
 	/**
 	 * Adaptor to use children in range-based for loops.
@@ -635,9 +644,13 @@ class node
 	 */
 	void write_dts(FILE *file, int indent);
 	/**
-	 * Recursively visit this node and then its children.
+	 * Recursively visit this node and then its children based on the
+	 * callable's return value.  The callable may return VISIT_BREAK
+	 * immediately halt all recursion and end the visit, VISIT_CONTINUE to
+	 * not recurse into the current node's children, or VISIT_RECURSE to recurse
+	 * through children as expected.  parent will be passed to the callable.
 	 */
-	void visit(std::function<void(node&)>);
+	visit_behavior visit(std::function<visit_behavior(node&, node*)>, node *parent);
 };
 
 /**
