@@ -39,8 +39,32 @@
 			};
 		};
 	};
+	fragment@4 {
+
+		target-path = "/";
+		__overlay__ {
+
+			foobar {
+
+				foobar,status = "okay";
+			};
+		};
+	};
+	fragment@5 {
+
+		target-path = "/soc";
+		__overlay__ {
+
+			baz {
+
+				baz,status = "okay";
+				phandle = <0x2>;
+			};
+		};
+	};
 	__symbols__ {
 
+		quux = "/fragment@5/__overlay__/baz";
 		foobar = "/fragment@3/__overlay__/foobar";
 	};
 	__fixups__ {

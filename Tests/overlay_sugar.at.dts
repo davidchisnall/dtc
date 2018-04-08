@@ -24,3 +24,15 @@
 		foobar,status = "okay";
 	};
 };
+
+&{/} {
+	foobar {
+		foobar,status = "okay";
+	};
+};
+
+&{/soc} {
+	quux: baz {
+		baz,status = "okay";
+	};
+};
