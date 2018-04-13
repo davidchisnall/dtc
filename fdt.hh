@@ -409,6 +409,10 @@ class node
 	 */
 	std::string name;
 	/**
+	 * The name of the node is a path reference.
+	 */
+	bool name_is_path_reference = false;
+	/**
 	 * The unit address of the node, which is optionally written after the
 	 * name followed by an at symbol.
 	 */
