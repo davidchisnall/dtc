@@ -1,0 +1,42 @@
+/dts-v1/;
+/plugin/;
+
+&foo {
+	foo,status = "okay";
+};
+
+&bar {
+	bar,status = "okay";
+};
+
+/ {
+	fragment@0 {
+		target = <&qux>;
+		__overlay__ {
+			qux,status = "okay";
+		};
+	};
+};
+
+&baz {
+	baz,status = "okay";
+	foobar: foobar {
+		foobar,status = "okay";
+	};
+};
+
+&{/} {
+	foobar {
+		foobar,status = "okay";
+	};
+};
+
+&{/soc} {
+	quux: baz {
+		baz,status = "okay";
+	};
+};
+
+&{/soc/ethernet@1000} {
+	quuxnode = <&quux>;
+};
