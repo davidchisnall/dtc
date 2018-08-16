@@ -1992,7 +1992,13 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 					}
 					if (!found)
 					{
-						n->add_child(node::create_special_node(p.first, symbols));
+						string path = p.first;
+						if (!(p.second.empty()))
+						{
+							path += '@';
+							path += p.second;
+						}
+						n->add_child(node::create_special_node(path, symbols));
 						n = (--n->child_end())->get();
 					}
 				}
