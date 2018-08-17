@@ -1337,7 +1337,7 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 		phandle_set.insert({&i.val, i});
 	}
 	std::vector<std::reference_wrapper<fixup>> sorted_phandles;
-	root->visit([&](node &n, node *parent) {
+	root->visit([&](node &n, node *) {
 		for (auto &p : n.properties())
 		{
 			for (auto &v : *p)
