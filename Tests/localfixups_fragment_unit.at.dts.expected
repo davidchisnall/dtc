@@ -1,0 +1,43 @@
+/dts-v1/;
+
+/  {
+
+	fragment@1 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			f1_node {
+
+				phandle = <0x1>;
+			};
+		};
+	};
+	fragment@2 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			ref-0 = <0x1>;
+		};
+	};
+	__symbols__ {
+
+		f1_label = "/fragment@1/__overlay__/f1_node";
+	};
+	__fixups__ {
+
+		foo = "/fragment@1:target:0";
+		bar = "/fragment@2:target:0";
+	};
+	__local_fixups__ {
+
+		fragment@2 {
+
+			__overlay__ {
+
+				ref-0 = <0x0>;
+			};
+		};
+	};
+};

@@ -1,0 +1,19 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    fragment@1 {
+        target = <&foo>;
+        __overlay__ {
+            f1_label: f1_node {
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&bar>;
+        __overlay__ {
+            ref-0 = <&f1_label>;
+        };
+    };
+};
