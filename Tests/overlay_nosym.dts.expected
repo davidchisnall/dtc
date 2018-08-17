@@ -1,0 +1,89 @@
+/dts-v1/;
+
+/  {
+
+	fragment@0 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			foo,status = "okay";
+		};
+	};
+	fragment@1 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			bar,status = "okay";
+		};
+	};
+	fragment@2 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			qux,status = "okay";
+		};
+	};
+	fragment@3 {
+
+		target = <0xdeadbeef>;
+		__overlay__ {
+
+			baz,status = "okay";
+			foobar {
+
+				foobar,status = "okay";
+			};
+		};
+	};
+	fragment@4 {
+
+		target-path = "/";
+		__overlay__ {
+
+			foobar {
+
+				foobar,status = "okay";
+			};
+		};
+	};
+	fragment@5 {
+
+		target-path = "/soc";
+		__overlay__ {
+
+			baz {
+
+				baz,status = "okay";
+				phandle = <0x1>;
+			};
+		};
+	};
+	fragment@6 {
+
+		target-path = "/soc/ethernet@1000";
+		__overlay__ {
+
+			quuxnode = <0x1>;
+		};
+	};
+	__fixups__ {
+
+		foo = "/fragment@0:target:0";
+		bar = "/fragment@1:target:0";
+		qux = "/fragment@2:target:0";
+		baz = "/fragment@3:target:0";
+	};
+	__local_fixups__ {
+
+		fragment@6 {
+
+			__overlay__ {
+
+				quuxnode = <0x0>;
+			};
+		};
+	};
+};
