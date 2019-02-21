@@ -1,0 +1,19 @@
+/dts-v1/;
+
+/  {
+
+	qux@0 {
+
+		test-property = <0x1>;
+		phandle = <0x2>;
+	};
+	qux@1 {
+
+		test-property = <0x2>;
+		phandle = <0x1>;
+	};
+	quux@2 {
+
+		test-property = <0x2>;
+	};
+};

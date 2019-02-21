@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+	/omit-if-no-ref/ qux0: qux@0 {
+		test-property = <&qux1>;
+		test-property-ng = <&quux>;
+	};
+	/omit-if-no-ref/ qux1: qux@1 {
+		test-property = <&qux0>;
+	};
+
+	quux: quux@2 { };
+};
