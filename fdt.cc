@@ -862,9 +862,9 @@ node::node(text_input_buffer &input,
 		// flag set if we find any characters that are only in
 		// the property name character set, not the node 
 		bool is_property = false;
-		// flag set if our node is marked as /delete-if-unreferenced/ to be
+		// flag set if our node is marked as /omit-if-no-ref/ to be
 		// garbage collected later if nothing references it
-		bool delete_if_unreferenced = false;
+		bool omit_if_no_ref = false;
 		string child_name, child_address;
 		std::unordered_set<string> child_labels;
 		auto parse_delete = [&](const char *expected, bool at)
@@ -911,10 +911,10 @@ node::node(text_input_buffer &input,
 			}
 			continue;
 		}
-		if (input.consume("/delete-if-unreferenced/"))
+		if (input.consume("/omit-if-no-ref/"))
 		{
 			input.next_token();
-			delete_if_unreferenced = true;
+			omit_if_no_ref = true;
 		}
 		child_name = parse_name(input, is_property,
 				"Expected property or node name");
@@ -955,7 +955,7 @@ node::node(text_input_buffer &input,
 					std::move(child_labels), std::move(child_address), defines);
 			if (child)
 			{
-				child->delete_if_unreferenced = delete_if_unreferenced;
+				child->node_flags.omit_if_no_ref = omit_if_no_ref;
 				children.push_back(std::move(child));
 			}
 			else
@@ -1362,8 +1362,6 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 		return node::VISIT_RECURSE;
 	}, nullptr);
 	assert(sorted_phandles.size() == fixups.size());
-	// Keep track of referenced nodes for later garbage collection
-	std::unordered_map<node*, int> referenced_nodes;
 	for (auto &i : sorted_phandles)
 	{
 		string target_name = i.get().val.string_data;
@@ -1444,72 +1442,96 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 				return;
 			}
 		}
-		// Track referenced nodes for later garbage collection
-		if (referenced_nodes.find(target) != referenced_nodes.end())
-		{
-			referenced_nodes[target]++;
-		}
-		else
-		{
-			referenced_nodes[target] = 1;
-		}
 		// If there is an existing phandle, use it
 		property_ptr p = assign_phandle(target, phandle);
 		p->begin()->push_to_buffer(i.get().val.byte_data);
 		assert(i.get().val.byte_data.size() == 4);
 	}
-	// Begin garbage collection
-	int nodes_removed = 0;
-	do {
-		// Map a node for deletion to its parent for later deletion
-		std::map<node *, node *> garbage_nodes;
-		root->visit([&](node &n, node *parent) {
-			if (n.delete_if_unreferenced)
+}
+
+void
+device_tree::garbage_collect_marked_nodes()
+{
+	std::unordered_set<node*> previously_referenced_nodes;
+	std::unordered_set<node*> newly_referenced_nodes;
+	std::unordered_set<node*> orphan_parents;
+
+	auto mark_referenced_nodes_used = [&](node &n)
+	{
+		for (auto &p : n.properties())
+		{
+			for (auto &v : *p)
 			{
-				// Are we referenced?
-				if (referenced_nodes.find(&n) == referenced_nodes.end() ||
-				    referenced_nodes[&n] == 0)
+				if (v.is_phandle())
 				{
-					garbage_nodes[&n] = parent;
-					// Continue recursion after this node
-					return node::VISIT_CONTINUE;
+					node *nx = node_names[v.string_data];
+					// Only mark those currently unmarked
+					if (!nx->node_flags.used)
+					{
+							nx->node_flags.used = 1;
+							newly_referenced_nodes.insert(nx);
+					}
 				}
 			}
-			// Recurse as normal
-			return node::VISIT_RECURSE;
-		}, nullptr);
-		nodes_removed = garbage_nodes.size();
-		for (auto iter : garbage_nodes)
+		}
+	};
+	// Seed our referenced nodes with those that have been seen by a node that
+	// either will not be omitted if it's unreferenced or has a symbol.
+	// Nodes with symbols are explicitly not garbage collected because they may
+	// be expected for referencing by an overlay, and we do not want surprises
+	// there.
+	root->visit([&](node &n, node *parent) {
+		if (!n.node_flags.omit_if_no_ref)
 		{
-			node *parent = iter.second;
+			mark_referenced_nodes_used(n);
+		}
+		// Recurse as normal
+		return node::VISIT_RECURSE;
+	}, nullptr);
 
-		}
-	} while (nodes_removed > 0);
-}
-/*
-void
-device_tree::garbage_collect_marked_nodes(node_ptr &n, node *parent)
-{
-	if (n->delete_if_unreferenced)
+	while (!newly_referenced_nodes.empty())
 	{
-		auto i = std::find(referenced_nodes.begin(), referenced_nodes.end(),
-			n.get());
-		if (i == referenced_nodes.end())
-		{
-			parent->delete_child(n);
-			// No point in checking its children; it has been deleted.
-			return;
-		}
+			previously_referenced_nodes = std::move(newly_referenced_nodes);
+			for (auto *n : previously_referenced_nodes)
+			{
+				mark_referenced_nodes_used(*n);
+			}
 	}
-	for (auto &c : n->child_nodes())
-	{
-		if (c)
+
+	previously_referenced_nodes.clear();
+
+	// Delete
+	root->visit([&](node &n, node *parent) {
+		if (parent == nullptr)
 		{
-			garbage_collect_marked_nodes(c, n.get());
+			// The root will never be garbage collected.
+			return node::VISIT_RECURSE;
 		}
+		if (parent->node_flags.omit_if_no_ref && !parent->node_flags.used)
+		{
+			// Don't bother with this one if it's going to be omitted
+			return node::VISIT_CONTINUE;
+		}
+		if (n.node_flags.omit_if_no_ref && !n.node_flags.used)
+		{
+			// Don't add duplicates
+			if (orphan_parents.find(parent) == orphan_parents.end())
+			{
+				orphan_parents.insert(parent);
+			}
+		}
+
+		return node::VISIT_RECURSE;
+	}, nullptr);
+
+
+	for (auto *n : orphan_parents)
+	{
+		n->delete_children_if([](node_ptr &nx) {
+			return (nx->node_flags.omit_if_no_ref && !nx->node_flags.used);
+		});
 	}
 }
-*/
 
 void
 device_tree::parse_file(text_input_buffer &input,
@@ -1943,6 +1965,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		assign_phandles(root, phandle);
 	}
 	resolve_cross_references(phandle);
+	garbage_collect_marked_nodes();
 	if (write_symbols)
 	{
 		std::vector<property_ptr> symbols;
