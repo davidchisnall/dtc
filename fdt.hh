@@ -864,7 +864,7 @@ class device_tree
 	 * marked for "delete if unreferenced" will also occur here.
 	 */
 	void resolve_cross_references(uint32_t &phandle);
-	void garbage_collect_marked_nodes();
+	bool garbage_collect_marked_nodes();
 	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has

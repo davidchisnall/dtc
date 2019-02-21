@@ -1449,7 +1449,7 @@ device_tree::resolve_cross_references(uint32_t &phandle)
 	}
 }
 
-void
+bool
 device_tree::garbage_collect_marked_nodes()
 {
 	std::unordered_set<node*> previously_referenced_nodes;
@@ -1464,6 +1464,23 @@ device_tree::garbage_collect_marked_nodes()
 				if (v.is_phandle())
 				{
 					node *nx = node_names[v.string_data];
+					if (nx == nullptr)
+					{
+						// Try it again, but as a path
+						for (auto &s : node_paths)
+						{
+							if (v.string_data == s.second.to_string())
+							{
+								nx = node_names[s.first];
+								break;
+							}
+						}
+					}
+					if (nx == nullptr)
+					{
+						// Couldn't resolve this one?
+						continue;
+					}
 					// Only mark those currently unmarked
 					if (!nx->node_flags.used)
 					{
@@ -1498,8 +1515,7 @@ device_tree::garbage_collect_marked_nodes()
 	}
 
 	previously_referenced_nodes.clear();
-	std::unordered_set<node*> orphan_parents;
-	std::unordered_set<std::string> labels_destroyed;
+	bool children_deleted = false;
 
 	// Delete
 	root->visit([&](node &n, node *parent) {
@@ -1510,23 +1526,13 @@ device_tree::garbage_collect_marked_nodes()
 				if (cn->node_flags.omit_if_no_ref && !cn->node_flags.used)
 				{
 					gc_children = true;
-					cn->visit([&](node &gcn, node *parent) {
-							// We'll need to clean up node_names as well
-							for (const string &name : gcn.labels)
-							{
-								if (name != string())
-								{
-									labels_destroyed.insert(name);
-								}
-							}
-
-							return node::VISIT_RECURSE;
-					}, &n);
+					break;
 				}
 		}
 
 		if (gc_children)
 		{
+			children_deleted = true;
 			n.delete_children_if([](node_ptr &nx) {
 				return (nx->node_flags.omit_if_no_ref && !nx->node_flags.used);
 			});
@@ -1537,10 +1543,7 @@ device_tree::garbage_collect_marked_nodes()
 		return node::VISIT_RECURSE;
 	}, nullptr);
 
-	for (auto lbl : labels_destroyed)
-	{
-		node_names.erase(lbl);
-	}
+	return children_deleted;
 }
 
 void
@@ -1991,7 +1994,12 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		}
 	}
 	collect_names();
-	garbage_collect_marked_nodes();
+	// Return value indicates whether we've dirtied the tree or not and need to
+	// recollect names
+	if (garbage_collect_marked_nodes())
+	{
+		collect_names();
+	}
 	uint32_t phandle = 1;
 	// If we're writing symbols, go ahead and assign phandles to the entire
 	// tree. We'll do this before we resolve cross references, just to keep
