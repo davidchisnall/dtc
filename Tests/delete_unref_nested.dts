@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/ {
+
+	/omit-if-no-ref/ out: outer@2 {
+		inner@4 {
+			inner@1 {
+				test-property = <&out>;
+			};
+		};
+	};
+};
