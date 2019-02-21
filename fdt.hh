@@ -417,11 +417,12 @@ class node
 	 * name followed by an at symbol.
 	 */
 	std::string unit_address;
-	/**
-	 * A flag indicating that this node should be deleted later if it is not
-	 * referenced in the final tree.
-	 */
-	bool delete_if_unreferenced = false;
+	struct node_flag_bits {
+		char omit_if_no_ref : 1;
+		char used : 1;
+
+		node_flag_bits() : omit_if_no_ref(0), used(0) {};
+	} node_flags;
 	/**
 	 * The type for the property vector.
 	 */
@@ -645,14 +646,11 @@ class node
 		children.push_back(std::move(n));
 	}
 	/**
-	 * Deletes a child from this node.
+	 * Deletes any children from this node.
 	 */
-	inline void delete_child(node_ptr &n)
+	inline void delete_children_if(bool (*predicate)(node_ptr &))
 	{
-		children.erase(std::remove_if(children.begin(), children.end(),
-				[&](const node_ptr &p) {
-					return (p == n);
-				}), children.end());
+		children.erase(std::remove_if(children.begin(), children.end(), predicate));
 	}
 	/**
 	 * Merges a node into this one.  Any properties present in both are
@@ -866,6 +864,7 @@ class device_tree
 	 * marked for "delete if unreferenced" will also occur here.
 	 */
 	void resolve_cross_references(uint32_t &phandle);
+	void garbage_collect_marked_nodes();
 	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
 	 * set.  The `read_header` argument indicates whether the header has
