@@ -650,7 +650,7 @@ class node
 	 */
 	inline void delete_children_if(bool (*predicate)(node_ptr &))
 	{
-		children.erase(std::remove_if(children.begin(), children.end(), predicate));
+		children.erase(std::remove_if(children.begin(), children.end(), predicate), children.end());
 	}
 	/**
 	 * Merges a node into this one.  Any properties present in both are

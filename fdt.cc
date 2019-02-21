@@ -1454,7 +1454,6 @@ device_tree::garbage_collect_marked_nodes()
 {
 	std::unordered_set<node*> previously_referenced_nodes;
 	std::unordered_set<node*> newly_referenced_nodes;
-	std::unordered_set<node*> orphan_parents;
 
 	auto mark_referenced_nodes_used = [&](node &n)
 	{
@@ -1499,37 +1498,48 @@ device_tree::garbage_collect_marked_nodes()
 	}
 
 	previously_referenced_nodes.clear();
+	std::unordered_set<node*> orphan_parents;
+	std::unordered_set<std::string> labels_destroyed;
 
 	// Delete
 	root->visit([&](node &n, node *parent) {
-		if (parent == nullptr)
+		bool gc_children = false;
+
+		for (auto &cn : n.child_nodes())
 		{
-			// The root will never be garbage collected.
-			return node::VISIT_RECURSE;
+				if (cn->node_flags.omit_if_no_ref && !cn->node_flags.used)
+				{
+					gc_children = true;
+					cn->visit([&](node &gcn, node *parent) {
+							// We'll need to clean up node_names as well
+							for (const string &name : gcn.labels)
+							{
+								if (name != string())
+								{
+									labels_destroyed.insert(name);
+								}
+							}
+
+							return node::VISIT_RECURSE;
+					}, &n);
+				}
 		}
-		if (parent->node_flags.omit_if_no_ref && !parent->node_flags.used)
+
+		if (gc_children)
 		{
-			// Don't bother with this one if it's going to be omitted
+			n.delete_children_if([](node_ptr &nx) {
+				return (nx->node_flags.omit_if_no_ref && !nx->node_flags.used);
+			});
+
 			return node::VISIT_CONTINUE;
-		}
-		if (n.node_flags.omit_if_no_ref && !n.node_flags.used)
-		{
-			// Don't add duplicates
-			if (orphan_parents.find(parent) == orphan_parents.end())
-			{
-				orphan_parents.insert(parent);
-			}
 		}
 
 		return node::VISIT_RECURSE;
 	}, nullptr);
 
-
-	for (auto *n : orphan_parents)
+	for (auto lbl : labels_destroyed)
 	{
-		n->delete_children_if([](node_ptr &nx) {
-			return (nx->node_flags.omit_if_no_ref && !nx->node_flags.used);
-		});
+		node_names.erase(lbl);
 	}
 }
 
@@ -1981,6 +1991,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		}
 	}
 	collect_names();
+	garbage_collect_marked_nodes();
 	uint32_t phandle = 1;
 	// If we're writing symbols, go ahead and assign phandles to the entire
 	// tree. We'll do this before we resolve cross references, just to keep
@@ -1990,7 +2001,6 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		assign_phandles(root, phandle);
 	}
 	resolve_cross_references(phandle);
-	garbage_collect_marked_nodes();
 	if (write_symbols)
 	{
 		std::vector<property_ptr> symbols;
