@@ -17,9 +17,12 @@ phases:
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test
       sudo apt-get update
       sudo apt-get install -y ninja-build
+      sudo apt-get install gcc-7 g++-7
+
+
   - task: CMake@1
     inputs:
-      cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType) -DENABLE_TESTS=ON'
+      cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType) -DENABLE_TESTS=ON -DCMAKE_CXX_COMPILER=g++-7'
 
   - script: |
       ninja
