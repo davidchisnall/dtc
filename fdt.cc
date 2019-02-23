@@ -2096,19 +2096,23 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 				{
 					if (c->name == p.first)
 					{
-						string path = p.first;
-						if (!(p.second.empty()))
+						if (c->unit_address == p.second)
 						{
-							path += '@';
-							path += p.second;
+							n = c.get();
+							found = true;
+							break;
 						}
-						n->add_child(node::create_special_node(path, symbols));
-						n = (--n->child_end())->get();
 					}
 				}
 				if (!found)
 				{
-					n->add_child(node::create_special_node(p.first, symbols));
+					string path = p.first;
+					if (!(p.second.empty()))
+					{
+						path += '@';
+						path += p.second;
+					}
+					n->add_child(node::create_special_node(path, symbols));
 					n = (--n->child_end())->get();
 				}
 			}
