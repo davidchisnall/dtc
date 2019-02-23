@@ -13,6 +13,10 @@ phases:
         BuildType: Release
 
   steps:
+  - script: |
+      sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+      sudo apt-get update
+      sudo apt-get install -y ninja-build
   - task: CMake@1
     inputs:
       cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType)'
