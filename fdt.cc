@@ -46,6 +46,7 @@
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -491,6 +492,7 @@ property::property(text_input_buffer &input,
 					break;
 				}
 			}
+			[[fallthrough]];
 			default:
 				input.parse_error("Invalid property value.");
 				valid = false;
@@ -622,6 +624,7 @@ property_value::try_to_merge(property_value &other)
 			return false;
 		case EMPTY:
 			*this = other;
+			[[fallthrough]];
 		case STRING:
 		case STRING_LIST:
 		case CROSS_REFERENCE:
