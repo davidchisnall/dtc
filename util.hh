@@ -53,7 +53,7 @@ namespace
 	/**
 	 * Glibc doesn't have a definition of digittoint, so provide our own.
 	 */
-	int digittoint(int c)
+	inline int digittoint(int c)
 	{
 		switch (c)
 		{
