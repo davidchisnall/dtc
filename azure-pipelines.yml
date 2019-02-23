@@ -26,11 +26,17 @@ phases:
 
   - script: |
       ninja
+
+    workingDirectory: build
+    failOnStderr: true
+    displayName: 'Compile'
+
+  - script: |
       ctest -j 4 --output-on-failure
 
     workingDirectory: build
     failOnStderr: true
-    displayName: 'Compile & Test'
+    displayName: 'Test'
 
 - phase: macOS
   queue:
@@ -50,9 +56,15 @@ phases:
 
   - script: |
       make -j 4
+
+    workingDirectory: build
+    failOnStderr: true
+    displayName: 'Compile'
+
+  - script: |
       ctest -j 4 --output-on-failure
 
     workingDirectory: build
     failOnStderr: true
-    displayName: 'Compile & Test'
+    displayName: 'Test'
 
