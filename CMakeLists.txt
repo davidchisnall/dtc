@@ -14,7 +14,7 @@ set(dtc_CXX_SRCS
 )
 add_executable(dtc ${dtc_CXX_SRCS})
 
-set_property(TARGET dtc PROPERTY CXX_STANDARD 11)
+set_property(TARGET dtc PROPERTY CXX_STANDARD 17)
 set(ENABLE_TESTS_DEFAULT FALSE)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -28,4 +28,3 @@ if(ENABLE_TESTS)
 	add_subdirectory("Tests")
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
