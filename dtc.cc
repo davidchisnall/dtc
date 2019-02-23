@@ -106,7 +106,7 @@ main(int argc, char **argv)
 	bool debug_mode = false;
 	auto write_fn = &device_tree::write_binary;
 	auto read_fn = &device_tree::parse_dts;
-	uint32_t boot_cpu;
+	uint32_t boot_cpu = 0;
 	bool boot_cpu_specified = false;
 	bool keep_going = false;
 	bool sort = false;
