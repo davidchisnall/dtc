@@ -1199,6 +1199,7 @@ device_tree::collect_names_recursive(node_ptr &n, node_path &path)
 			{
 				node_names.insert(std::make_pair(name, n.get()));
 				node_paths.insert(std::make_pair(name, path));
+				ordered_node_paths.push_back({name, path});
 			}
 			else
 			{
@@ -2019,8 +2020,14 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 		// referenced by other plugins, so we create a __symbols__ node inside
 		// the root that contains mappings (properties) from label names to
 		// paths.
-		for (auto &s : node_paths)
+		for (auto i=ordered_node_paths.rbegin(), e=ordered_node_paths.rend() ; i!=e ; ++i)
 		{
+			auto &s = *i;
+			if (node_paths.find(s.first) == node_paths.end())
+			{
+				// Erased node, skip it.
+				continue;
+			}
 			property_value v;
 			v.string_data = s.second.to_string();
 			v.type = property_value::STRING;

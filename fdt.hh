@@ -749,6 +749,12 @@ class device_tree
 	 */
 	std::unordered_map<std::string, node_path> node_paths;
 	/**
+	 * All of the elements in `node_paths` in the order that they were
+	 * created.  This is used for emitting the `__symbols__` section, where
+	 * we want to guarantee stable ordering.
+	 */
+	std::vector<std::pair<std::string, node_path>> ordered_node_paths;
+	/**
 	 * A collection of property values that are references to other nodes.
 	 * These should be expanded to the full path of their targets.
 	 */
