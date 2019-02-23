@@ -44,7 +44,7 @@
 
 using std::string;
 
-#ifdef __GLIBC__
+#ifdef MISSING_DIGITTOINT
 namespace
 {
 	/**
