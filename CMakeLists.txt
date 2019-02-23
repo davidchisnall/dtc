@@ -28,3 +28,4 @@ if(ENABLE_TESTS)
 	add_subdirectory("Tests")
 endif()
 
+set(CMAKE_CXX_STANDARD 14)
