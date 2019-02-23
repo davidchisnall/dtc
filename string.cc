@@ -52,7 +52,7 @@ namespace
 	 */
 	int digittoint(int c)
 	{
-		switch (int c)
+		switch (c)
 		{
 			default:
 			case '0': return 0;
