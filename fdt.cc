@@ -1256,6 +1256,7 @@ device_tree::collect_names()
 	node_path p;
 	node_names.clear();
 	node_paths.clear();
+	ordered_node_paths.clear();
 	cross_references.clear();
 	fixups.clear();
 	collect_names_recursive(root, p);
