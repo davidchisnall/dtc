@@ -1496,7 +1496,7 @@ device_tree::garbage_collect_marked_nodes()
 	// Nodes with symbols are explicitly not garbage collected because they may
 	// be expected for referencing by an overlay, and we do not want surprises
 	// there.
-	root->visit([&](node &n, node *parent) {
+	root->visit([&](node &n, node *) {
 		if (!n.node_flags.omit_if_no_ref)
 		{
 			mark_referenced_nodes_used(n);
@@ -1518,7 +1518,7 @@ device_tree::garbage_collect_marked_nodes()
 	bool children_deleted = false;
 
 	// Delete
-	root->visit([&](node &n, node *parent) {
+	root->visit([&](node &n, node *) {
 		bool gc_children = false;
 
 		for (auto &cn : n.child_nodes())
