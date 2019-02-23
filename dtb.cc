@@ -37,6 +37,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
 using std::string;
 
