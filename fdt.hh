@@ -56,6 +56,7 @@ namespace fdt
 {
 class property;
 class node;
+class device_tree;
 /**
  * Type for (owned) pointers to properties.
  */
@@ -523,6 +524,7 @@ class node
 	 * already been parsed.
 	 */
 	node(text_input_buffer &input,
+	     device_tree &tree,
 	     std::string &&n,
 	     std::unordered_set<std::string> &&l,
 	     std::string &&a,
@@ -619,6 +621,7 @@ class node
 	 * have been parsed.
 	 */
 	static node_ptr parse(text_input_buffer &input,
+	                      device_tree &tree,
 	                      std::string &&name,
 	                      std::unordered_set<std::string> &&label=std::unordered_set<std::string>(),
 	                      std::string &&address=std::string(),
@@ -732,6 +735,11 @@ class device_tree
 	 * on parse errors. 
 	 */
 	bool valid = true;
+	/**
+	 * Flag indicating that this tree requires garbage collection.  This will be
+	 * set to true if a node marked /omit-if-no-ref/ is encountered.
+	 */
+	bool garbage_collect = false;
 	/**
 	 * Type used for memory reservations.  A reservation is two 64-bit
 	 * values indicating a base address and length in memory that the
@@ -970,6 +978,14 @@ class device_tree
 	inline bool is_valid()
 	{
 		return valid;
+	}
+	/**
+	 * Mark this tree as needing garbage collection, because an /omit-if-no-ref/
+	 * node has been encountered.
+	 */
+	void needs_garbage_collection()
+	{
+		garbage_collect = true;
 	}
 	/**
 	 * Sets the format for writing phandle properties.
