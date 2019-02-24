@@ -417,8 +417,18 @@ class node
 	 * name followed by an at symbol.
 	 */
 	std::string unit_address;
-	struct node_flag_bits {
+	struct node_flag_bits
+	{
+		/**
+		 * A flag indicating that this node has been marked /omit-if-no-ref/ and
+		 * will be omitted if it is not referenced, either directly or indirectly,
+		 * by a node that is not similarly denoted.
+		 */
 		char omit_if_no_ref : 1;
+		/**
+		 * A flag indicating that this node has been referenced, either directly
+		 * or indirectly, by a node that is not marked /omit-if-no-ref/.
+		 */
 		char used : 1;
 
 		node_flag_bits() : omit_if_no_ref(0), used(0) {};
@@ -870,6 +880,14 @@ class device_tree
 	 * marked for "delete if unreferenced" will also occur here.
 	 */
 	void resolve_cross_references(uint32_t &phandle);
+	/**
+	 * Garbage collects nodes that have been marked /omit-if-no-ref/ and do not
+	 * have any references to them from nodes that are similarly marked.  This
+	 * is a fairly expensive operation.  The return value indicates whether the
+	 * tree has been dirtied as a result of this operation, so that the caller
+	 * may take appropriate measures to bring the device tree into a consistent
+	 * state as needed.
+	 */
 	bool garbage_collect_marked_nodes();
 	/**
 	 * Parses a dts file in the given buffer and adds the roots to the parsed
