@@ -849,6 +849,7 @@ node_ptr node::create_special_node(const string &name,
 }
 
 node::node(text_input_buffer &input,
+           device_tree &tree,
            string &&n,
            std::unordered_set<string> &&l,
            string &&a,
@@ -918,6 +919,7 @@ node::node(text_input_buffer &input,
 		{
 			input.next_token();
 			omit_if_no_ref = true;
+			tree.needs_garbage_collection();
 		}
 		child_name = parse_name(input, is_property,
 				"Expected property or node name");
@@ -954,7 +956,7 @@ node::node(text_input_buffer &input,
 		}
 		else if (!is_property && *input == ('{'))
 		{
-			node_ptr child = node::parse(input, std::move(child_name),
+			node_ptr child = node::parse(input, tree, std::move(child_name),
 					std::move(child_labels), std::move(child_address), defines);
 			if (child)
 			{
@@ -1010,12 +1012,14 @@ node::sort()
 
 node_ptr
 node::parse(text_input_buffer &input,
+            device_tree &tree,
             string &&name,
             string_set &&label,
             string &&address,
             define_map *defines)
 {
 	node_ptr n(new node(input,
+	                    tree,
 	                    std::move(name),
 	                    std::move(label),
 	                    std::move(address),
@@ -1496,6 +1500,7 @@ device_tree::garbage_collect_marked_nodes()
 			}
 		}
 	};
+
 	// Seed our referenced nodes with those that have been seen by a node that
 	// either will not be omitted if it's unreferenced or has a symbol.
 	// Nodes with symbols are explicitly not garbage collected because they may
@@ -1595,7 +1600,7 @@ device_tree::parse_file(text_input_buffer &input,
 		if (input.consume('/'))
 		{
 			input.next_token();
-			n = node::parse(input, string(), string_set(), string(), &defines);
+			n = node::parse(input, *this, string(), string_set(), string(), &defines);
 		}
 		else if (input.consume('&'))
 		{
@@ -1616,7 +1621,7 @@ device_tree::parse_file(text_input_buffer &input,
 				name = input.parse_node_name();
 			}
 			input.next_token();
-			n = node::parse(input, std::move(name), string_set(), string(), &defines);
+			n = node::parse(input, *this, std::move(name), string_set(), string(), &defines);
 			n->name_is_path_reference = name_is_path_reference;
 		}
 		else
@@ -2001,7 +2006,7 @@ device_tree::parse_dts(const string &fn, FILE *depfile)
 	collect_names();
 	// Return value indicates whether we've dirtied the tree or not and need to
 	// recollect names
-	if (garbage_collect_marked_nodes())
+	if (garbage_collect && garbage_collect_marked_nodes())
 	{
 		collect_names();
 	}
