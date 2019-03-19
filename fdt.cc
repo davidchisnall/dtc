@@ -919,7 +919,7 @@ node::node(text_input_buffer &input,
 		{
 			input.next_token();
 			omit_if_no_ref = true;
-			tree.needs_garbage_collection();
+			tree.set_needs_garbage_collection();
 		}
 		child_name = parse_name(input, is_property,
 				"Expected property or node name");

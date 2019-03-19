@@ -983,7 +983,7 @@ class device_tree
 	 * Mark this tree as needing garbage collection, because an /omit-if-no-ref/
 	 * node has been encountered.
 	 */
-	void needs_garbage_collection()
+	void set_needs_garbage_collection()
 	{
 		garbage_collect = true;
 	}
