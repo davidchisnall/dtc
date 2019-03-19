@@ -418,22 +418,17 @@ class node
 	 * name followed by an at symbol.
 	 */
 	std::string unit_address;
-	struct node_flag_bits
-	{
-		/**
-		 * A flag indicating that this node has been marked /omit-if-no-ref/ and
-		 * will be omitted if it is not referenced, either directly or indirectly,
-		 * by a node that is not similarly denoted.
-		 */
-		char omit_if_no_ref : 1;
-		/**
-		 * A flag indicating that this node has been referenced, either directly
-		 * or indirectly, by a node that is not marked /omit-if-no-ref/.
-		 */
-		char used : 1;
-
-		node_flag_bits() : omit_if_no_ref(0), used(0) {};
-	} node_flags;
+	/**
+	 * A flag indicating that this node has been marked /omit-if-no-ref/ and
+	 * will be omitted if it is not referenced, either directly or indirectly,
+	 * by a node that is not similarly denoted.
+	 */
+	bool omit_if_no_ref = false;
+	/**
+	 * A flag indicating that this node has been referenced, either directly
+	 * or indirectly, by a node that is not marked /omit-if-no-ref/.
+	 */
+	bool used = false;
 	/**
 	 * The type for the property vector.
 	 */

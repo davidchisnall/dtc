@@ -868,7 +868,7 @@ node::node(text_input_buffer &input,
 		bool is_property = false;
 		// flag set if our node is marked as /omit-if-no-ref/ to be
 		// garbage collected later if nothing references it
-		bool omit_if_no_ref = false;
+		bool marked_omit_if_no_ref = false;
 		string child_name, child_address;
 		std::unordered_set<string> child_labels;
 		auto parse_delete = [&](const char *expected, bool at)
@@ -918,7 +918,7 @@ node::node(text_input_buffer &input,
 		if (input.consume("/omit-if-no-ref/"))
 		{
 			input.next_token();
-			omit_if_no_ref = true;
+			marked_omit_if_no_ref = true;
 			tree.set_needs_garbage_collection();
 		}
 		child_name = parse_name(input, is_property,
@@ -960,7 +960,7 @@ node::node(text_input_buffer &input,
 					std::move(child_labels), std::move(child_address), defines);
 			if (child)
 			{
-				child->node_flags.omit_if_no_ref = omit_if_no_ref;
+				child->omit_if_no_ref = marked_omit_if_no_ref;
 				children.push_back(std::move(child));
 			}
 			else
@@ -1491,9 +1491,9 @@ device_tree::garbage_collect_marked_nodes()
 						continue;
 					}
 					// Only mark those currently unmarked
-					if (!nx->node_flags.used)
+					if (!nx->used)
 					{
-							nx->node_flags.used = 1;
+							nx->used = 1;
 							newly_referenced_nodes.insert(nx);
 					}
 				}
@@ -1507,7 +1507,7 @@ device_tree::garbage_collect_marked_nodes()
 	// be expected for referencing by an overlay, and we do not want surprises
 	// there.
 	root->visit([&](node &n, node *) {
-		if (!n.node_flags.omit_if_no_ref)
+		if (!n.omit_if_no_ref)
 		{
 			mark_referenced_nodes_used(n);
 		}
@@ -1533,7 +1533,7 @@ device_tree::garbage_collect_marked_nodes()
 
 		for (auto &cn : n.child_nodes())
 		{
-				if (cn->node_flags.omit_if_no_ref && !cn->node_flags.used)
+				if (cn->omit_if_no_ref && !cn->used)
 				{
 					gc_children = true;
 					break;
@@ -1544,7 +1544,7 @@ device_tree::garbage_collect_marked_nodes()
 		{
 			children_deleted = true;
 			n.delete_children_if([](node_ptr &nx) {
-				return (nx->node_flags.omit_if_no_ref && !nx->node_flags.used);
+				return (nx->omit_if_no_ref && !nx->used);
 			});
 
 			return node::VISIT_CONTINUE;
