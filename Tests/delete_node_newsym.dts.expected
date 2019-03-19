@@ -1,0 +1,14 @@
+/dts-v1/;
+
+/  {
+
+	foo {
+
+		next-quux = <0x1>;
+	};
+	bar {
+
+		bar-prop = "ok";
+		phandle = <0x1>;
+	};
+};
