@@ -1058,6 +1058,30 @@ node::merge_node(node_ptr &other)
 	{
 		labels.insert(l);
 	}
+	children.erase(std::remove_if(children.begin(), children.end(),
+			[&](const node_ptr &p) {
+				string full_name = p->name;
+				if (p->unit_address != string())
+				{
+					full_name += '@';
+					full_name += p->unit_address;
+				}
+				if (other->deleted_children.count(full_name) > 0)
+				{
+					other->deleted_children.erase(full_name);
+					return true;
+				}
+				return false;
+			}), children.end());
+	props.erase(std::remove_if(props.begin(), props.end(),
+			[&](const property_ptr &p) {
+				if (other->deleted_props.count(p->get_key()) > 0)
+				{
+					other->deleted_props.erase(p->get_key());
+					return true;
+				}
+				return false;
+			}), props.end());
 	// Note: this is an O(n*m) operation.  It might be sensible to
 	// optimise this if we find that there are nodes with very
 	// large numbers of properties, but for typical usage the
@@ -1097,30 +1121,6 @@ node::merge_node(node_ptr &other)
 			children.push_back(std::move(c));
 		}
 	}
-	children.erase(std::remove_if(children.begin(), children.end(),
-			[&](const node_ptr &p) {
-				string full_name = p->name;
-				if (p->unit_address != string())
-				{
-					full_name += '@';
-					full_name += p->unit_address;
-				}
-				if (other->deleted_children.count(full_name) > 0)
-				{
-					other->deleted_children.erase(full_name);
-					return true;
-				}
-				return false;
-			}), children.end());
-	props.erase(std::remove_if(props.begin(), props.end(),
-			[&](const property_ptr &p) {
-				if (other->deleted_props.count(p->get_key()) > 0)
-				{
-					other->deleted_props.erase(p->get_key());
-					return true;
-				}
-				return false;
-			}), props.end());
 }
 
 void
