@@ -1,0 +1,22 @@
+/dts-v1/;
+
+/ {
+    foo {
+    };
+
+    qux: bar {
+        foo-prop = "ok";
+    };
+};
+
+/ {
+    /delete-node/ bar;
+
+    quux: bar {
+        bar-prop = "ok";
+    };
+
+    foo {
+        next-quux = <&quux>;
+    };
+};
