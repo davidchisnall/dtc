@@ -66,7 +66,7 @@ int version_minor_compatible = 4;
  * The current patch level of the tool.
  */
 int version_patch = 0;
-int version_patch_compatible = 0;
+int version_patch_compatible = 7;
 
 void usage(const string &argv0)
 {
