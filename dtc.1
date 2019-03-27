@@ -30,7 +30,7 @@
 .\"
 .\" $FreeBSD$
 .\"/
-.Dd April 7, 2018
+.Dd March 27, 2019
 .Dt DTC 1
 .Os
 .Sh NAME
@@ -305,6 +305,18 @@ in
 .Xr loader.conf 5 .
 Multiple overlays may be specified, and they will be applied in the order given.
 .El
+.Sh NODE OMISSION
+This utility supports the
+.Va /omit-if-no-ref/
+statement to mark nodes for omission if they are ultimately not referenced
+elsewhere in the device tree.
+This may be used in more space-constrained environments to remove nodes that may
+not be applicable to the specific device the tree is being compiled for.
+.Pp
+When the
+.Fl @
+flag is used to write symbols, nodes with labels will be considered referenced
+and will not be removed from the tree.
 .Sh EXAMPLES
 The command:
 .Pp
