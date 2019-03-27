@@ -1507,7 +1507,7 @@ device_tree::garbage_collect_marked_nodes()
 	// be expected for referencing by an overlay, and we do not want surprises
 	// there.
 	root->visit([&](node &n, node *) {
-		if (!n.omit_if_no_ref)
+		if (!n.omit_if_no_ref || (write_symbols && !n.labels.empty()))
 		{
 			mark_referenced_nodes_used(n);
 		}
