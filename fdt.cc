@@ -1747,7 +1747,8 @@ device_tree::write_dts(int fd)
 	if (!reservations.empty())
 	{
 		const char msg[] = "/memreserve/";
-		fwrite(msg, sizeof(msg), 1, file);
+		// Exclude the null byte when we're writing it out to the file.
+		fwrite(msg, sizeof(msg) - 1, 1, file);
 		for (auto &i : reservations)
 		{
 			fprintf(file, " %" PRIx64 " %" PRIx64, i.first, i.second);
