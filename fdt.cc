@@ -1795,6 +1795,10 @@ device_tree::parse_dtb(const string &fn, FILE *)
 			valid = false;
 			return;
 		}
+		if (start != 0 || length != 0)
+		{
+			reservations.push_back(reservation(start, length));
+		}
 	} while (!((start == 0) && (length == 0)));
 	input_buffer struct_table =
 		input.buffer_from_offset(h.off_dt_struct, h.size_dt_struct);
