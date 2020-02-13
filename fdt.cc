@@ -1754,7 +1754,7 @@ device_tree::write_dts(int fd)
 		fwrite(msg, sizeof(msg) - 1, 1, file);
 		for (auto &i : reservations)
 		{
-			fprintf(file, " %" PRIx64 " %" PRIx64, i.first, i.second);
+			fprintf(file, " 0x%" PRIx64 " 0x%" PRIx64, i.first, i.second);
 		}
 		fputs(";\n\n", file);
 	}
