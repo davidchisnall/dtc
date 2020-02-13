@@ -1664,7 +1664,7 @@ device_tree::write(int fd)
 		reservation_writer.write_comment(string("Reservation start"));
 		reservation_writer.write_data(i.first);
 		reservation_writer.write_comment(string("Reservation length"));
-		reservation_writer.write_data(i.first);
+		reservation_writer.write_data(i.second);
 	}
 	// Write n spare reserve map entries, plus the trailing 0.
 	for (uint32_t i=0 ; i<=spare_reserve_map_entries ; i++)
