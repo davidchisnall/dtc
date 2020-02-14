@@ -1,0 +1,7 @@
+/dts-v1/;
+
+/memreserve/ 0x0 0x1000;
+
+/ {
+	compatible = "memreserve";
+};
