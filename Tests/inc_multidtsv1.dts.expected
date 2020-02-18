@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/  {
+
+	foo {
+
+		compatible = "simple-bus";
+	};
+};
