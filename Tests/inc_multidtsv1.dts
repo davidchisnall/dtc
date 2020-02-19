@@ -1,0 +1,10 @@
+/dts-v1/;
+/include/ "inc1_multidtsv1.dtsi"
+
+
+/ {
+  foo {
+    compatible = "simple-bus";
+  };
+};
+
