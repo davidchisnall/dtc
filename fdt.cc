@@ -335,6 +335,9 @@ property::parse_cells(text_input_buffer &input, int cell_size)
 			unsigned long long val;
 			if (!input.consume_integer_expression(val))
 			{
+				// FIXME: Distinguish invalid syntax from a
+				// number that cannot be represented in an
+				// unsigned long long.
 				input.parse_error("Expected numbers in array of cells");
 				valid = false;
 				return;

@@ -1,0 +1,6 @@
+/dts-v1/;
+
+/ {
+	// CHECK: cells_range_bad_erange.dts.fc:5:18: Expected numbers in array of cells
+	reg = /bits/ 64 <0x10000000000000000>;
+}
