@@ -51,7 +51,7 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       # Build your program with the given configuration
-      run: NINJA_STATUS="%p [%f:%s/%t] %o/s, %es" && ninja
+      run: NINJA_STATUS="%p [%f:%s/%t] %o/s, %es " ninja
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Build your program with the given configuration
