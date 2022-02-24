@@ -1,0 +1,6 @@
+/dts-v1/;
+
+/ {
+	// CHECK: cells_range_bad_bits32_0.dts.fc:5:19: Value does not fit in a 32-bit cell
+	reg = <0x100000000>;
+}

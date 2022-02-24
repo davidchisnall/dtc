@@ -1,0 +1,6 @@
+/dts-v1/;
+
+/ {
+	// CHECK: cells_range_bad_bits8_1.dts.fc:5:24: Value does not fit in a 8-bit cell
+	reg = /bits/ 8 <(-0x81)>;
+}

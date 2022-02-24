@@ -1,0 +1,6 @@
+/dts-v1/;
+
+/ {
+	// CHECK: cells_range_bad_bits16_1.dts.fc:5:27: Value does not fit in a 16-bit cell
+	reg = /bits/ 16 <(-0x8001)>;
+}
