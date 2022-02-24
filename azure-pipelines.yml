@@ -4,7 +4,7 @@ resources:
 phases:
 - phase: Linux
   queue:
-    name: 'Hosted Ubuntu 1604'
+    name: 'Hosted Ubuntu 2004'
     parallel: 2
     matrix:
       Debug:
@@ -17,12 +17,12 @@ phases:
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test
       sudo apt-get update
       sudo apt-get install -y ninja-build
-      sudo apt-get install gcc-7 g++-7
+      sudo apt-get install gcc-10 g++-10
 
 
   - task: CMake@1
     inputs:
-      cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType) -DENABLE_TESTS=ON -DCMAKE_CXX_COMPILER=g++-7'
+      cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType) -DENABLE_TESTS=ON -DCMAKE_CXX_COMPILER=g++-10'
 
   - script: |
       ninja
