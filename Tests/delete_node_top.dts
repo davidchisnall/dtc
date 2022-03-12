@@ -1,0 +1,15 @@
+/dts-v1/;
+
+/ {
+        node1 { 
+                test: node3 {};
+        };
+};
+
+/ {
+        test2: node2 { };
+};
+
+/delete-node/ &test;
+/delete-node/ &test2;
+
