@@ -338,6 +338,14 @@ input_buffer::consume(const char *str)
 }
 
 bool
+input_buffer::consume_char_literal(unsigned long long &outInt)
+{
+	outInt = (unsigned char)((*this)[0]);
+	cursor++;
+	return true;
+}
+
+bool
 input_buffer::consume_integer(unsigned long long &outInt)
 {
 	// The first character must be a digit.  Hex and octal strings
@@ -874,6 +882,19 @@ expression_ptr text_input_buffer::parse_expression(bool stopAtParen)
 	source_location l = location();
 	switch (*(*this))
 	{
+		case '\'':
+			consume('\'');
+			if(!consume_char_literal(leftVal))
+			{
+				return nullptr;
+			}
+			lhs.reset(new terminal_expr(l, leftVal));
+			skip_to('\'');
+			if (!consume('\''))
+			{
+				return nullptr;
+			}
+			break;
 		case '0'...'9':
 			if (!consume_integer(leftVal))
 			{
