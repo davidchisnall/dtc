@@ -343,16 +343,21 @@ input_buffer::consume_char_literal(unsigned long long &outInt)
 	outInt = (unsigned char)((*this)[0]);
 	cursor++;
 
-	// Handle escape sequences.
 	if(outInt != '\\')
+	{
 		return true;
+	}
 	else if(cursor >= size)
+	{
 		return false;
+	}
 
 	outInt = (unsigned char)((*this)[0]);
 	cursor++;
 
 	switch (outInt) {
+		default:
+			return false;
 		case 'n':
 			outInt = (unsigned char)'\n';
 			break;
@@ -368,8 +373,6 @@ input_buffer::consume_char_literal(unsigned long long &outInt)
 		case '\'':
 		case '\\':
 			break;
-		default:
-			return false;
 	}
 
 	return true;
