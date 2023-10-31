@@ -359,9 +359,17 @@ input_buffer::consume_char_literal(unsigned long long &outInt)
 		case 'r':
 			outInt = (unsigned char)'\r';
 			break;
-		default:
-			// Let any other symbol to resolves to itself.
+		case 't':
+			outInt = (unsigned char)'\t';
 			break;
+		case '0':
+			outInt = 0;
+			break;
+		case '\'':
+		case '\\':
+			break;
+		default:
+			return false;
 	}
 
 	return true;
@@ -910,12 +918,11 @@ expression_ptr text_input_buffer::parse_expression(bool stopAtParen)
 			{
 				return nullptr;
 			}
-			lhs.reset(new terminal_expr(l, leftVal));
-			skip_to('\'');
 			if (!consume('\''))
 			{
 				return nullptr;
 			}
+			lhs.reset(new terminal_expr(l, leftVal));
 			break;
 		case '0'...'9':
 			if (!consume_integer(leftVal))

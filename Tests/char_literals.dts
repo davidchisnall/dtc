@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+
+    gpio_port = <('F' - 'A')>;
+    test_nl   = <('\n')>;
+    test_cr   = <('\r')>;
+    test_tab  = <('\t')>;
+    test_bs   = <('\\')>;
+    test_sq   = <('\'')>;
+    test_zero = <('\0')>;
+
+}

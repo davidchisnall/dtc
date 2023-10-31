@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/  {
+
+	gpio_port = <0x5>;
+	test_nl = <0xa>;
+	test_cr = <0xd>;
+	test_tab = <0x9>;
+	test_bs = <0x5c>;
+	test_sq = <0x27>;
+	test_zero = <0x0>;
+};
