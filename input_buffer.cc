@@ -343,11 +343,11 @@ input_buffer::consume_char_literal(unsigned long long &outInt)
 	outInt = (unsigned char)((*this)[0]);
 	cursor++;
 
-	if(outInt != '\\')
+	if (outInt != '\\')
 	{
 		return true;
 	}
-	else if(cursor >= size)
+	else if (cursor >= size)
 	{
 		return false;
 	}
@@ -917,7 +917,7 @@ expression_ptr text_input_buffer::parse_expression(bool stopAtParen)
 	{
 		case '\'':
 			consume('\'');
-			if(!consume_char_literal(leftVal))
+			if (!consume_char_literal(leftVal))
 			{
 				return nullptr;
 			}
